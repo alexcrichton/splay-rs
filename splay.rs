@@ -33,7 +33,7 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
     /// Performs a splay operation on the tree, moving a key to the root, or one
     /// of the closest values to the key to the root.
     pub fn splay(&mut self, key: &K) {
-        let mut root = util::replace(&mut self.root, None).unwrap();
+        let mut root = self.pop_root();
         let mut newleft = None;
         let mut newright = None;
 
@@ -43,6 +43,10 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
         root.left = newright;
         root.right = newleft;
         self.root = Some(root);
+    }
+
+    fn pop_root(&mut self) -> ~Node<K, V> {
+        util::replace(&mut self.root, None).unwrap()
     }
 }
 
@@ -99,31 +103,27 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
     /// present in the map, that value is returned. Otherwise None is returned.
     fn swap(&mut self, key: K, value: V) -> Option<V> {
         if self.root.is_none() {
-            self.root = Some(Node::new(key, value));
+            self.root = Some(Node::new(key, value, None, None));
             self.size += 1;
             return None;
         }
 
         self.splay(&key);
-        let mut root = util::replace(&mut self.root, None).unwrap();
+        let mut root = self.pop_root();
 
         match key.cmp(&root.key) {
             Equal => {
-                let ret = Some(util::replace(&mut root.value, value));
+                let ret = util::replace(&mut root.value, value);
                 self.root = Some(root);
-                return ret;
+                return Some(ret);
             }
             Less => {
-                let mut me = Node::new(key, value);
-                me.left = util::replace(&mut root.left, None);
-                me.right = Some(root);
-                self.root = Some(me);
+                let left = root.pop_left();
+                self.root = Some(Node::new(key, value, left, Some(root)));
             }
             Greater => {
-                let mut me = Node::new(key, value);
-                me.right = util::replace(&mut root.right, None);
-                me.left = Some(root);
-                self.root = Some(me);
+                let right = root.pop_right();
+                self.root = Some(Node::new(key, value, Some(root), right));
             }
         }
 
@@ -146,7 +146,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         }
 
         self.splay(key);
-        let root = util::replace(&mut self.root, None).unwrap();
+        let root = self.pop_root();
         if !key.equals(&root.key) {
             self.root = Some(root);
             return None;
@@ -173,7 +173,6 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         if self.root.is_none() {
             return None;
         }
-
         self.splay(key);
         let root = self.root.get_mut_ref();
         if key.equals(&root.key) {
@@ -233,8 +232,9 @@ impl<T: TotalOrd> SplaySet<T> {
 }
 
 impl<K: cmp::TotalOrd, V> Node<K, V> {
-    fn new(k: K, v: V) -> ~Node<K, V> {
-        ~Node{ key: k, value: v, left: None, right: None }
+    fn new(k: K, v: V, l: Option<~Node<K, V>>,
+           r: Option<~Node<K, V>>) -> ~Node<K, V> {
+        ~Node{ key: k, value: v, left: l, right: r }
     }
 
     /// Performs the top-down splay operation at a current node. The key is the
@@ -251,11 +251,13 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
         // When finishing the top-down splay operation, we need to ensure that
         // `self` doesn't have any children, so move its remaining children into
         // the `l` and `r` arguments.
-        fn fixup<K, V>(mut this: ~Node<K, V>, l: &mut Option<~Node<K, V>>,
-                       r: &mut Option<~Node<K, V>>) -> ~Node<K, V> {
-            *l = util::replace(&mut this.left, None);
-            *r = util::replace(&mut this.right, None);
-            return this;
+        fn fixup<K: cmp::TotalOrd, V>(mut me: ~Node<K, V>,
+                                      l: &mut Option<~Node<K, V>>,
+                                      r: &mut Option<~Node<K, V>>) -> ~Node<K, V>
+        {
+            *l = me.pop_left();
+            *r = me.pop_right();
+            return me;
         }
 
         let mut this = self;
@@ -264,16 +266,16 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
             Equal => { return fixup(this, l, r); }
 
             Less => {
-                match util::replace(&mut this.left, None) {
+                match this.pop_left() {
                     None => { return fixup(this, l, r); }
                     Some(left) => {
                         let mut left = left;
                         // rotate this node right if necessary
                         if key.cmp(&left.key) == Less {
-                            this.left = util::replace(&mut left.right, None);
+                            this.left = left.pop_right();
                             left.right = Some(this);
                             this = left;
-                            match util::replace(&mut this.left, None) {
+                            match this.pop_left() {
                                 Some(l) => { left = l; }
                                 None => { return fixup(this, l, r); }
                             }
@@ -293,16 +295,16 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
 
             // If you look closely, you may have seen some similar code before
             Greater => {
-                match util::replace(&mut this.right, None) {
+                match this.pop_right() {
                     None => { return fixup(this, l, r); }
                     // rotate left if necessary
                     Some(right) => {
                         let mut right = right;
                         if key.cmp(&right.key) == Greater {
-                            this.right = util::replace(&mut right.left, None);
+                            this.right = right.pop_left();
                             right.left = Some(this);
                             this = right;
-                            match util::replace(&mut this.right, None) {
+                            match this.pop_right() {
                                 Some(r) => { right = r; }
                                 None => { return fixup(this, l, r); }
                             }
@@ -331,6 +333,14 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
         self.left.each_mut(|l| l.each_mut(f)) &&
             f(&self.key, &mut self.value) &&
             self.right.each_mut(|r| r.each_mut(f))
+    }
+
+    fn pop_left(&mut self) -> Option<~Node<K, V>> {
+        util::replace(&mut self.left, None)
+    }
+
+    fn pop_right(&mut self) -> Option<~Node<K, V>> {
+        util::replace(&mut self.right, None)
     }
 }
 
