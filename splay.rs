@@ -8,16 +8,16 @@
 
 use std::util;
 
-/// The implementation of this splay tree is largely based on the java code at:
-/// https://github.com/cpdomina/SplaySplayMap. This version of splaying is a
-/// top-down splay operation.
+/// The implementation of this splay tree is largely based on the c code at:
+///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
+/// This version of splaying is a top-down splay operation.
 pub struct SplayMap<K, V> {
     priv root: Option<~Node<K, V>>,
     priv size: uint,
 }
 
 pub struct SplaySet<T> {
-    priv map: SplayMap<T, ()>
+    map: SplayMap<T, ()>
 }
 
 struct Node<K, V> {
@@ -27,14 +27,12 @@ struct Node<K, V> {
   right: Option<~Node<K, V>>,
 }
 
-pub impl<K: TotalOrd, V> SplayMap<K, V> {
-    fn new() -> SplayMap<K, V> {
-        SplayMap{ root: None, size: 0 }
-    }
+impl<K: TotalOrd, V> SplayMap<K, V> {
+    pub fn new() -> SplayMap<K, V> { SplayMap{ root: None, size: 0 } }
 
     /// Performs a splay operation on the tree, moving a key to the root, or one
     /// of the closest values to the key to the root.
-    fn splay(&mut self, key: &K) {
+    pub fn splay(&mut self, key: &K) {
         let mut root = util::replace(&mut self.root, None).unwrap();
         let mut newleft = None;
         let mut newright = None;
@@ -163,10 +161,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         } else {
             self.root = left;
             self.splay(key);
-            match self.root {
-                Some(ref mut node) => { node.right = right; }
-                None => fail!()
-            }
+            self.root.get_mut_ref().right = right;
         }
 
         self.size -= 1;
@@ -180,15 +175,11 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         }
 
         self.splay(key);
-        match self.root {
-            None => fail!(),
-            Some(ref mut r) => {
-                if key.equals(&r.key) {
-                    return Some(&mut r.value);
-                }
-                return None;
-            }
+        let root = self.root.get_mut_ref();
+        if key.equals(&root.key) {
+            return Some(&mut root.value);
         }
+        return None;
     }
 
     /// Return a reference to the value corresponding to the key
@@ -205,10 +196,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // one of the nodes (the pointer won't be deallocated or moved).
         unsafe {
             let this = cast::transmute_mut(self);
-            match this.find_mut(key) {
-                None => None,
-                Some(ptr) => Some(cast::transmute_immut(ptr))
-            }
+            this.find_mut(key).map_consume(cast::transmute_immut)
         }
     }
 }
@@ -225,25 +213,23 @@ impl<T> Mutable for SplaySet<T> {
     fn clear(&mut self) { self.map.clear() }
 }
 
-pub impl<T: TotalOrd> SplaySet<T> {
+impl<T: TotalOrd> SplaySet<T> {
     /// Creates a new empty set
-    pub fn new() -> SplaySet<T> {
-        SplaySet { map: SplayMap::new() }
-    }
+    pub fn new() -> SplaySet<T> { SplaySet { map: SplayMap::new() } }
 
     /// Add a value to the set. Return true if the value was not already
     /// present in the set.
     #[inline(always)]
-    fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
+    pub fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
 
     /// Return true if the set contains a value
     #[inline(always)]
-    fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
+    pub fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
 
     /// Remove a value from the set. Return true if the value was
     /// present in the set.
     #[inline(always)]
-    fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
+    pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
 }
 
 impl<K: cmp::TotalOrd, V> Node<K, V> {
@@ -286,7 +272,7 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
                         if key.cmp(&left.key) == Less {
                             this.left = util::replace(&mut left.right, None);
                             left.right = Some(this);
-                            this= left;
+                            this = left;
                             match util::replace(&mut this.left, None) {
                                 Some(l) => { left = l; }
                                 None => { return fixup(this, l, r); }
