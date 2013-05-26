@@ -6,7 +6,7 @@
 #[license = "MIT"];
 #[crate_type = "lib"];
 
-use core::util;
+use std::util;
 
 /// The implementation of this splay tree is largely based on the java code at:
 /// https://github.com/cpdomina/SplaySplayMap. This version of splaying is a
@@ -204,8 +204,8 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // to invoke the splay operation and return a pointer to the inside of
         // one of the nodes (the pointer won't be deallocated or moved).
         unsafe {
-            let self = cast::transmute_mut(self);
-            match self.find_mut(key) {
+            let this = cast::transmute_mut(self);
+            match this.find_mut(key) {
                 None => None,
                 Some(ptr) => Some(cast::transmute_immut(ptr))
             }
@@ -265,37 +265,36 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
         // When finishing the top-down splay operation, we need to ensure that
         // `self` doesn't have any children, so move its remaining children into
         // the `l` and `r` arguments.
-        fn fixup<K, V>(self: ~Node<K, V>, l: &mut Option<~Node<K, V>>,
+        fn fixup<K, V>(mut this: ~Node<K, V>, l: &mut Option<~Node<K, V>>,
                        r: &mut Option<~Node<K, V>>) -> ~Node<K, V> {
-            let mut self = self;
-            *l = util::replace(&mut self.left, None);
-            *r = util::replace(&mut self.right, None);
-            return self;
+            *l = util::replace(&mut this.left, None);
+            *r = util::replace(&mut this.right, None);
+            return this;
         }
 
-        let mut self = self;
-        match key.cmp(&self.key) {
+        let mut this = self;
+        match key.cmp(&this.key) {
             // Found it, yay!
-            Equal => { return fixup(self, l, r); }
+            Equal => { return fixup(this, l, r); }
 
             Less => {
-                match util::replace(&mut self.left, None) {
-                    None => { return fixup(self, l, r); }
+                match util::replace(&mut this.left, None) {
+                    None => { return fixup(this, l, r); }
                     Some(left) => {
                         let mut left = left;
                         // rotate this node right if necessary
                         if key.cmp(&left.key) == Less {
-                            self.left = util::replace(&mut left.right, None);
-                            left.right = Some(self);
-                            self = left;
-                            match util::replace(&mut self.left, None) {
+                            this.left = util::replace(&mut left.right, None);
+                            left.right = Some(this);
+                            this= left;
+                            match util::replace(&mut this.left, None) {
                                 Some(l) => { left = l; }
-                                None => { return fixup(self, l, r); }
+                                None => { return fixup(this, l, r); }
                             }
                         }
 
                         // Bit of an odd way to get some loans, but it works
-                        *r = Some(self);
+                        *r = Some(this);
                         match *r {
                             None => fail!(),
                             Some(ref mut me) => {
@@ -308,22 +307,22 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
 
             // If you look closely, you may have seen some similar code before
             Greater => {
-                match util::replace(&mut self.right, None) {
-                    None => { return fixup(self, l, r); }
+                match util::replace(&mut this.right, None) {
+                    None => { return fixup(this, l, r); }
                     // rotate left if necessary
                     Some(right) => {
                         let mut right = right;
                         if key.cmp(&right.key) == Greater {
-                            self.right = util::replace(&mut right.left, None);
-                            right.left = Some(self);
-                            self = right;
-                            match util::replace(&mut self.right, None) {
+                            this.right = util::replace(&mut right.left, None);
+                            right.left = Some(this);
+                            this = right;
+                            match util::replace(&mut this.right, None) {
                                 Some(r) => { right = r; }
-                                None => { return fixup(self, l, r); }
+                                None => { return fixup(this, l, r); }
                             }
                         }
 
-                        *l = Some(self);
+                        *l = Some(this);
                         match *l {
                             None => fail!(),
                             Some(ref mut me) => {
