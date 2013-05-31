@@ -6,6 +6,8 @@
 #[license = "MIT"];
 #[crate_type = "lib"];
 
+use std::cast;
+use std::cmp;
 use std::util;
 
 /// The implementation of this splay tree is largely based on the c code at:
