@@ -50,6 +50,11 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
     fn pop_root(&mut self) -> ~Node<K, V> {
         util::replace(&mut self.root, None).unwrap()
     }
+
+    /// Similar to `find`, but fails if the key is not present in the map
+    pub fn get<'a>(&'a self, k: &K) -> &'a V {
+        self.find(k).expect("key not present in map")
+    }
 }
 
 impl<K, V> Container for SplayMap<K, V> {
@@ -231,6 +236,26 @@ impl<T: TotalOrd> SplaySet<T> {
     /// present in the set.
     #[inline(always)]
     pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
+
+    pub fn each(&self, f: &fn(&T) -> bool) -> bool {
+      self.map.each_key(f)
+    }
+}
+
+impl<T: TotalOrd> cmp::Eq for SplaySet<T> {
+  pub fn eq(&self, other: &SplaySet<T>) -> bool {
+    if self.len() != other.len() {
+      return false;
+    }
+    for self.each |t| {
+      if !other.contains(t) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  pub fn ne(&self, other: &SplaySet<T>) -> bool { !self.eq(other) }
 }
 
 impl<K: cmp::TotalOrd, V> Node<K, V> {
@@ -476,5 +501,21 @@ mod test {
         assert!(m.insert(5, 3));
         assert!(m.insert(9, 3));
         assert!(m.find(&2) == None);
+    }
+
+    #[test]
+    fn eq_works() {
+        let mut m1 = SplaySet::new();
+        let mut m2 = SplaySet::new();
+        let mut m3 = SplaySet::new();
+        m1.insert(1);
+        m1.insert(2);
+        m2.insert(2);
+        m2.insert(1);
+        m3.insert(1);
+
+        assert!(m1 == m2);
+        assert!(m1 != m3);
+        assert!(m2 != m3);
     }
 }
