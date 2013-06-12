@@ -7,7 +7,6 @@
 #[crate_type = "lib"];
 
 use std::cast;
-use std::cmp;
 use std::util;
 
 /// The implementation of this splay tree is largely based on the c code at:
@@ -53,7 +52,12 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
 
     /// Similar to `find`, but fails if the key is not present in the map
     pub fn get<'a>(&'a self, k: &K) -> &'a V {
-        self.find(k).expect("key not present in map")
+        self.find(k).expect("key not present in SplayMap")
+    }
+
+    /// Similar to `find_mut`, but fails if the key is not present in the map
+    pub fn get_mut<'a>(&'a mut self, k: &K) -> &'a mut V {
+        self.find_mut(k).expect("key not present in SplayMap")
     }
 }
 
@@ -207,6 +211,24 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
     }
 }
 
+impl<K: TotalOrd, V: Eq> Eq for SplayMap<K, V> {
+  fn eq(&self, other: &SplayMap<K, V>) -> bool {
+    if self.len() != other.len() {
+      return false;
+    }
+    for self.each |k, v| {
+      match other.find(k) {
+        None => { return false; }
+        Some(v2) if v != v2 => { return false; }
+        Some(_) => {}
+      }
+    }
+    return true;
+  }
+
+  fn ne(&self, other: &SplayMap<K, V>) -> bool { !self.eq(other) }
+}
+
 impl<T> Container for SplaySet<T> {
     #[inline(always)]
     fn len(&const self) -> uint { self.map.len() }
@@ -242,23 +264,12 @@ impl<T: TotalOrd> SplaySet<T> {
     }
 }
 
-impl<T: TotalOrd> cmp::Eq for SplaySet<T> {
-  pub fn eq(&self, other: &SplaySet<T>) -> bool {
-    if self.len() != other.len() {
-      return false;
-    }
-    for self.each |t| {
-      if !other.contains(t) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  pub fn ne(&self, other: &SplaySet<T>) -> bool { !self.eq(other) }
+impl<T: TotalOrd> Eq for SplaySet<T> {
+  pub fn eq(&self, other: &SplaySet<T>) -> bool { self.map == other.map }
+  pub fn ne(&self, other: &SplaySet<T>) -> bool { self.map != other.map }
 }
 
-impl<K: cmp::TotalOrd, V> Node<K, V> {
+impl<K: TotalOrd, V> Node<K, V> {
     fn new(k: K, v: V, l: Option<~Node<K, V>>,
            r: Option<~Node<K, V>>) -> ~Node<K, V> {
         ~Node{ key: k, value: v, left: l, right: r }
@@ -278,9 +289,9 @@ impl<K: cmp::TotalOrd, V> Node<K, V> {
         // When finishing the top-down splay operation, we need to ensure that
         // `self` doesn't have any children, so move its remaining children into
         // the `l` and `r` arguments.
-        fn fixup<K: cmp::TotalOrd, V>(mut me: ~Node<K, V>,
-                                      l: &mut Option<~Node<K, V>>,
-                                      r: &mut Option<~Node<K, V>>) -> ~Node<K, V>
+        fn fixup<K: TotalOrd, V>(mut me: ~Node<K, V>,
+                                 l: &mut Option<~Node<K, V>>,
+                                 r: &mut Option<~Node<K, V>>) -> ~Node<K, V>
         {
             *l = me.pop_left();
             *r = me.pop_right();
@@ -505,17 +516,32 @@ mod test {
 
     #[test]
     fn eq_works() {
-        let mut m1 = SplaySet::new();
-        let mut m2 = SplaySet::new();
-        let mut m3 = SplaySet::new();
-        m1.insert(1);
-        m1.insert(2);
-        m2.insert(2);
-        m2.insert(1);
-        m3.insert(1);
+        let mut m1 = SplayMap::new();
+        let mut m2 = SplayMap::new();
+        let mut m3 = SplayMap::new();
+        m1.insert(1, 1);
+        m1.insert(2, 1);
+        m2.insert(2, 1);
+        m2.insert(1, 1);
+        m3.insert(1, 1);
+        m3.insert(2, 2);
 
         assert!(m1 == m2);
         assert!(m1 != m3);
         assert!(m2 != m3);
+    }
+
+    #[test]
+    fn get_works() {
+        let mut m = SplayMap::new();
+        m.insert(1, 1);
+        assert!(*m.get(&1) == 1);
+    }
+
+    #[test] #[should_fail]
+    fn get_failing_works() {
+        let mut m = SplayMap::new::<int, int>();
+        m.insert(2, 2);
+        m.get(&1);
     }
 }
