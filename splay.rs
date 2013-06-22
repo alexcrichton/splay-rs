@@ -146,13 +146,13 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
     /// Visit all values in order
     #[inline(always)]
     fn each<'a>(&'a self, f: &fn(&K, &'a V) -> bool) -> bool {
-        self.root.each(|n| n.each(f))
+        self.root.iter().advance(|n| n.each(f))
     }
 
     /// Iterate over the map and mutate the contained values
     #[inline(always)]
     fn mutate_values(&mut self, f: &fn(&K, &mut V) -> bool) -> bool {
-        self.root.each_mut(|n| n.each_mut(f))
+        self.root.mut_iter().advance(|n| n.each_mut(f))
     }
 
     /// Visit all keys in order
@@ -363,15 +363,15 @@ impl<K: TotalOrd, V> Node<K, V> {
     }
 
     fn each<'a>(&'a self, f: &fn(&K, &'a V) -> bool) -> bool {
-        self.left.each(|l| l.each(f)) &&
+        self.left.iter().advance(|l| l.each(f)) &&
             f(&self.key, &self.value) &&
-            self.right.each(|r| r.each(f))
+            self.right.iter().advance(|r| r.each(f))
     }
 
     fn each_mut(&mut self, f: &fn(&K, &mut V) -> bool) -> bool {
-        self.left.each_mut(|l| l.each_mut(f)) &&
+        self.left.mut_iter().advance(|l| l.each_mut(f)) &&
             f(&self.key, &mut self.value) &&
-            self.right.each_mut(|r| r.each_mut(f))
+            self.right.mut_iter().advance(|r| r.each_mut(f))
     }
 
     #[inline(always)]
