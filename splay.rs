@@ -122,26 +122,6 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
     pub fn get_mut<'a>(&'a mut self, k: &K) -> &'a mut V {
         self.find_mut(k).expect("key not present in SplayMap")
     }
-}
-
-impl<K, V> Container for SplayMap<K, V> {
-    fn len(&const self) -> uint { self.size }
-    fn is_empty(&const self) -> bool { self.len() == 0 }
-}
-
-impl<K, V> Mutable for SplayMap<K, V> {
-    fn clear(&mut self) {
-        self.root = None;
-        self.size = 0;
-    }
-}
-
-impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
-    /// Return true if the map contains a value for the specified key
-    #[inline(always)]
-    fn contains_key(&self, key: &K) -> bool {
-        self.find(key).is_some()
-    }
 
     /// Visit all values in order
     #[inline(always)]
@@ -163,6 +143,26 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
     #[inline(always)]
     fn each_value<'a>(&'a self, f: &fn(&'a V) -> bool) -> bool {
         self.each(|_, v| f(v))
+    }
+}
+
+impl<K, V> Container for SplayMap<K, V> {
+    fn len(&const self) -> uint { self.size }
+    fn is_empty(&const self) -> bool { self.len() == 0 }
+}
+
+impl<K, V> Mutable for SplayMap<K, V> {
+    fn clear(&mut self) {
+        self.root = None;
+        self.size = 0;
+    }
+}
+
+impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
+    /// Return true if the map contains a value for the specified key
+    #[inline(always)]
+    fn contains_key(&self, key: &K) -> bool {
+        self.find(key).is_some()
     }
 
     /// Insert a key-value pair into the map. An existing value for a
