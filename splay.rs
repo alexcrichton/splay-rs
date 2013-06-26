@@ -567,7 +567,7 @@ mod test {
             v.push(i);
         }
 
-        for v.each |i| {
+        for v.iter().advance |i| {
             assert!(m.contains(i));
         }
     }
