@@ -165,6 +165,40 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         self.find(key).is_some()
     }
 
+    /// Return a reference to the value corresponding to the key
+    fn find<'a>(&'a self, key: &K) -> Option<&'a V> {
+        // Splay trees are self-modifying, so they can't exactly operate with
+        // the immutable self given by the Map interface for this method. It can
+        // be guaranteed, however, that the callers of this method are not
+        // modifying the tree, they may just be rotating it. Each node is a
+        // pointer on the heap, so we know that none of the pointers inside
+        // these nodes (the value returned from this function) will be moving.
+        //
+        // With this in mind, we can unsafely use a mutable version of this tree
+        // to invoke the splay operation and return a pointer to the inside of
+        // one of the nodes (the pointer won't be deallocated or moved).
+        unsafe {
+            let this = cast::transmute_mut(self);
+            this.find_mut(key).map_consume(cast::transmute_immut)
+        }
+    }
+}
+
+impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
+    /// Return a mutable reference to the value corresponding to the key
+    fn find_mut<'a>(&'a mut self, key: &K) -> Option<&'a mut V> {
+        match self.root {
+            None => { return None; }
+            Some(ref mut root) => {
+                splay(key, root);
+                if key.equals(&root.key) {
+                    return Some(&mut root.value);
+                }
+                return None;
+            }
+        }
+    }
+
     /// Insert a key-value pair into the map. An existing value for a
     /// key is replaced by the new value. Return true if the key did
     /// not already exist in the map.
@@ -228,7 +262,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         }
 
         // TODO: Extra storage of None isn't necessary
-        let (value, left, right) = match self.root.swap_unwrap() {
+        let (value, left, right) = match self.root.take_unwrap() {
             ~Node {left, right, value, _} => (value, left, right)
         };
 
@@ -244,38 +278,6 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
 
         self.size -= 1;
         return Some(value);
-    }
-
-    /// Return a mutable reference to the value corresponding to the key
-    fn find_mut<'a>(&'a mut self, key: &K) -> Option<&'a mut V> {
-        match self.root {
-            None => { return None; }
-            Some(ref mut root) => {
-                splay(key, root);
-                if key.equals(&root.key) {
-                    return Some(&mut root.value);
-                }
-                return None;
-            }
-        }
-    }
-
-    /// Return a reference to the value corresponding to the key
-    fn find<'a>(&'a self, key: &K) -> Option<&'a V> {
-        // Splay trees are self-modifying, so they can't exactly operate with
-        // the immutable self given by the Map interface for this method. It can
-        // be guaranteed, however, that the callers of this method are not
-        // modifying the tree, they may just be rotating it. Each node is a
-        // pointer on the heap, so we know that none of the pointers inside
-        // these nodes (the value returned from this function) will be moving.
-        //
-        // With this in mind, we can unsafely use a mutable version of this tree
-        // to invoke the splay operation and return a pointer to the inside of
-        // one of the nodes (the pointer won't be deallocated or moved).
-        unsafe {
-            let this = cast::transmute_mut(self);
-            this.find_mut(key).map_consume(cast::transmute_immut)
-        }
     }
 }
 
@@ -310,19 +312,9 @@ impl<T> Mutable for SplaySet<T> {
 }
 
 impl<T: TotalOrd> Set<T> for SplaySet<T> {
-    /// Add a value to the set. Return true if the value was not already
-    /// present in the set.
-    #[inline(always)]
-    pub fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
-
     /// Return true if the set contains a value
     #[inline(always)]
     pub fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
-
-    /// Remove a value from the set. Return true if the value was
-    /// present in the set.
-    #[inline(always)]
-    pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
 
     pub fn is_disjoint(&self, _: &SplaySet<T>) -> bool { fail!(); }
     pub fn is_subset(&self, _: &SplaySet<T>) -> bool { fail!(); }
@@ -339,6 +331,18 @@ impl<T: TotalOrd> Set<T> for SplaySet<T> {
     pub fn union(&self, _: &SplaySet<T>, _: &fn(&T) -> bool) -> bool {
         fail!();
     }
+}
+
+impl<T: TotalOrd> MutableSet<T> for SplaySet<T> {
+    /// Add a value to the set. Return true if the value was not already
+    /// present in the set.
+    #[inline(always)]
+    pub fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
+
+    /// Remove a value from the set. Return true if the value was
+    /// present in the set.
+    #[inline(always)]
+    pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
 }
 
 impl<T: TotalOrd> SplaySet<T> {
