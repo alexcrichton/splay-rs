@@ -354,6 +354,39 @@ impl<K, V> Node<K, V> {
     }
 }
 
+/// Destroys a node in O(1) extra space (including the stack). This is necessary
+/// to prevent stack exhaustion with extremely large trees.
+fn destroy<K, V>(mut cur: ~Node<K, V>) {
+    loop {
+        match cur.pop_left() {
+            Some(node) => {
+                let mut node = node;
+                cur.left = node.pop_right();
+                node.right = Some(cur);
+                cur = node;
+            }
+
+            None => {
+                match cur.pop_right() {
+                    Some(n) => { cur = n; }
+                    None => return
+                }
+            }
+        }
+    }
+}
+
+#[unsafe_destructor]
+impl<K, V> Drop for SplayMap<K, V> {
+    fn drop(&self) {
+        let me = unsafe { cast::transmute_mut(self) };
+        match me.root.take() {
+            Some(n) => destroy(n),
+            None => {}
+        }
+    }
+}
+
 #[inline(always)]
 fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
     use std::cast;
