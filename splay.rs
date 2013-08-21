@@ -179,7 +179,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // one of the nodes (the pointer won't be deallocated or moved).
         unsafe {
             let this = cast::transmute_mut(self);
-            this.find_mut(key).map_consume(cast::transmute_immut)
+            this.find_mut(key).map_move(cast::transmute_immut)
         }
     }
 }
@@ -281,24 +281,6 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
     }
 }
 
-impl<K: TotalOrd, V: Eq> Eq for SplayMap<K, V> {
-  fn eq(&self, other: &SplayMap<K, V>) -> bool {
-    if self.len() != other.len() {
-      return false;
-    }
-    for self.each |k, v| {
-      match other.find(k) {
-        None => { return false; }
-        Some(v2) if v != v2 => { return false; }
-        Some(_) => {}
-      }
-    }
-    return true;
-  }
-
-  fn ne(&self, other: &SplayMap<K, V>) -> bool { !self.eq(other) }
-}
-
 impl<T> Container for SplaySet<T> {
     #[inline(always)]
     fn len(&const self) -> uint { self.map.len() }
@@ -314,35 +296,23 @@ impl<T> Mutable for SplaySet<T> {
 impl<T: TotalOrd> Set<T> for SplaySet<T> {
     /// Return true if the set contains a value
     #[inline(always)]
-    pub fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
+    fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
 
-    pub fn is_disjoint(&self, _: &SplaySet<T>) -> bool { fail!(); }
-    pub fn is_subset(&self, _: &SplaySet<T>) -> bool { fail!(); }
-    pub fn is_superset(&self, _: &SplaySet<T>) -> bool { fail!(); }
-    pub fn difference(&self, _: &SplaySet<T>, _: &fn(&T) -> bool) -> bool {
-        fail!();
-    }
-    pub fn symmetric_difference(&self, _: &SplaySet<T>, _: &fn(&T) -> bool) -> bool {
-        fail!();
-    }
-    pub fn intersection(&self, _: &SplaySet<T>, _: &fn(&T) -> bool) -> bool {
-        fail!();
-    }
-    pub fn union(&self, _: &SplaySet<T>, _: &fn(&T) -> bool) -> bool {
-        fail!();
-    }
+    fn is_disjoint(&self, _: &SplaySet<T>) -> bool { fail!(); }
+    fn is_subset(&self, _: &SplaySet<T>) -> bool { fail!(); }
+    fn is_superset(&self, _: &SplaySet<T>) -> bool { fail!(); }
 }
 
 impl<T: TotalOrd> MutableSet<T> for SplaySet<T> {
     /// Add a value to the set. Return true if the value was not already
     /// present in the set.
     #[inline(always)]
-    pub fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
+    fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
 
     /// Remove a value from the set. Return true if the value was
     /// present in the set.
     #[inline(always)]
-    pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
+    fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
 }
 
 impl<T: TotalOrd> SplaySet<T> {
@@ -355,12 +325,7 @@ impl<T: TotalOrd> SplaySet<T> {
     }
 }
 
-impl<T: TotalOrd> Eq for SplaySet<T> {
-  pub fn eq(&self, other: &SplaySet<T>) -> bool { self.map == other.map }
-  pub fn ne(&self, other: &SplaySet<T>) -> bool { self.map != other.map }
-}
-
-impl<K: TotalOrd, V> Node<K, V> {
+impl<K, V> Node<K, V> {
     fn new(k: K, v: V, l: Option<~Node<K, V>>,
            r: Option<~Node<K, V>>) -> ~Node<K, V> {
         ~Node{ key: k, value: v, left: l, right: r }
@@ -464,11 +429,12 @@ mod test {
         assert!(m.insert(1, 2));
 
         let mut n = 0;
-        for m.each |k, v| {
+        do m.each |k, v| {
             assert!(*k == n);
             assert!(*v == n * 2);
             n += 1;
-        }
+            true
+        };
     }
 
     #[test]
@@ -529,23 +495,6 @@ mod test {
     }
 
     #[test]
-    fn eq_works() {
-        let mut m1 = SplayMap::new();
-        let mut m2 = SplayMap::new();
-        let mut m3 = SplayMap::new();
-        m1.insert(1, 1);
-        m1.insert(2, 1);
-        m2.insert(2, 1);
-        m2.insert(1, 1);
-        m3.insert(1, 1);
-        m3.insert(2, 2);
-
-        assert!(m1 == m2);
-        assert!(m1 != m3);
-        assert!(m2 != m3);
-    }
-
-    #[test]
     fn get_works() {
         let mut m = SplayMap::new();
         m.insert(1, 1);
@@ -565,13 +514,13 @@ mod test {
         let mut m = SplaySet::new();
         let mut v = ~[];
 
-        for 400.times {
+        do 400.times {
             let i: int = random();
             m.insert(i);
             v.push(i);
         }
 
-        for v.iter().advance |i| {
+        for i in v.iter() {
             assert!(m.contains(i));
         }
     }
