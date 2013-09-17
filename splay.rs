@@ -147,8 +147,8 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
 }
 
 impl<K, V> Container for SplayMap<K, V> {
-    fn len(&const self) -> uint { self.size }
-    fn is_empty(&const self) -> bool { self.len() == 0 }
+    fn len(&self) -> uint { self.size }
+    fn is_empty(&self) -> bool { self.len() == 0 }
 }
 
 impl<K, V> Mutable for SplayMap<K, V> {
@@ -283,9 +283,9 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
 
 impl<T> Container for SplaySet<T> {
     #[inline(always)]
-    fn len(&const self) -> uint { self.map.len() }
+    fn len(&self) -> uint { self.map.len() }
     #[inline(always)]
-    fn is_empty(&const self) -> bool { self.map.is_empty() }
+    fn is_empty(&self) -> bool { self.map.is_empty() }
 }
 
 impl<T> Mutable for SplaySet<T> {
@@ -378,9 +378,8 @@ fn destroy<K, V>(mut cur: ~Node<K, V>) {
 
 #[unsafe_destructor]
 impl<K, V> Drop for SplayMap<K, V> {
-    fn drop(&self) {
-        let me = unsafe { cast::transmute_mut(self) };
-        match me.root.take() {
+    fn drop(&mut self) {
+        match self.root.take() {
             Some(n) => destroy(n),
             None => {}
         }
@@ -514,7 +513,7 @@ mod test {
 
     #[test]
     fn find_empty() {
-        let m = SplayMap::new::<int, int>();
+        let m: SplayMap<int, int> = SplayMap::new();
         assert!(m.find(&5) == None);
     }
 
@@ -536,7 +535,7 @@ mod test {
 
     #[test] #[should_fail]
     fn get_failing_works() {
-        let mut m = SplayMap::new::<int, int>();
+        let mut m = SplayMap::new();
         m.insert(2, 2);
         m.get(&1);
     }
