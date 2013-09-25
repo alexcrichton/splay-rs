@@ -2,9 +2,7 @@
 //! pair to be used in maps and sets. The only requirement is that the key must
 //! implement the TotalOrd trait.
 
-#[link(name = "splay", vers = "0.0")];
 #[license = "MIT"];
-#[crate_type = "lib"];
 
 use std::cast;
 use std::util;
