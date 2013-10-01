@@ -3,9 +3,14 @@
 This is an implementation of splay trees written in rust. This was mostly a
 proof of concept work, and it ended up working out well!
 
-This isn't exactly meant to be used as a package right now, especially because
-`rustpkg` is undergoing a lot of changes. Until then, it's just a fun
-implementation.
+This repo now has structure of a `rustpkg` repository, so it should be
+installable via
+
+```
+rustpkg install github.com/alexcrichton/rs-splay
+```
+
+Still haven't quite figured out how to put it in an `extern mod` just yet...
 
 This code is all released under the MIT license. The implementation of splaying
-is largely based on https://github.com/cpdomina/SplaySplayMap
+is largely based on ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
