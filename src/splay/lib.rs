@@ -10,6 +10,7 @@ use std::util;
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
 /// This version of splaying is a top-down splay operation.
+#[no_freeze]
 pub struct SplayMap<K, V> {
     priv root: Option<~Node<K, V>>,
     priv size: uint,
