@@ -178,7 +178,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // one of the nodes (the pointer won't be deallocated or moved).
         unsafe {
             let this = cast::transmute_mut(self);
-            this.find_mut(key).map_move(cast::transmute_immut)
+            this.find_mut(key).map(cast::transmute_immut)
         }
     }
 }
@@ -394,7 +394,7 @@ fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::{SplayMap, SplaySet};
 
     // Lots of these are shamelessly stolen from the TreeMap tests, it'd be
     // awesome if they could share them...
