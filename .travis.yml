@@ -4,5 +4,4 @@ before_install:
 install:
   - sudo apt-get install rust-nightly
 script:
-  - rustpkg build splay
-  - rust test src/splay/lib.rs
+  - rustc --test src/splay/lib.rs && ./src/splay/lib
