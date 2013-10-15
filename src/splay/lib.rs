@@ -388,8 +388,15 @@ impl<K, V> Drop for SplayMap<K, V> {
 #[inline(always)]
 fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
     use std::cast;
-    let prev = util::replace(slot, node);
-    unsafe { cast::forget(prev) }
+    if cfg!(debug) {
+        assert!(slot.is_none());
+    }
+    if cfg!(maybesuperfast) {
+        let prev = util::replace(slot, node);
+        unsafe { cast::forget(prev) }
+    } else {
+        *slot = node;
+    }
 }
 
 #[cfg(test)]
