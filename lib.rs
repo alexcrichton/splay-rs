@@ -1,6 +1,19 @@
 //! Contains an implementation of splay trees where each node has a key/value
 //! pair to be used in maps and sets. The only requirement is that the key must
 //! implement the TotalOrd trait.
+//!
+//! # Example
+//!
+//!     use splay::SplayMap;
+//!
+//!     let mut map = SplayMap::new();
+//!     map.insert("foo", "bar");
+//!     map.insert("hello", "world");
+//!     map.insert("splay", "tree");
+//!
+//!     for (k, v) in map.move_iter() {
+//!         println!("{} => {}", k, v);
+//!     }
 
 #[license = "MIT"];
 
@@ -10,21 +23,24 @@ use std::util;
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
 /// This version of splaying is a top-down splay operation.
-#[no_freeze]
+#[no_freeze] // lookups are mutating operations
+#[deriving(Clone)]
 pub struct SplayMap<K, V> {
     priv root: Option<~Node<K, V>>,
     priv size: uint,
 }
 
+#[deriving(Clone)]
 pub struct SplaySet<T> {
     map: SplayMap<T, ()>
 }
 
+#[deriving(Clone)]
 struct Node<K, V> {
-  key: K,
-  value: V,
-  left: Option<~Node<K, V>>,
-  right: Option<~Node<K, V>>,
+    key: K,
+    value: V,
+    left: Option<~Node<K, V>>,
+    right: Option<~Node<K, V>>,
 }
 
 /// Performs a top-down splay operation on a tree rooted at `node`. This will
@@ -110,7 +126,9 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
 }
 
 impl<K: TotalOrd, V> SplayMap<K, V> {
-    pub fn new() -> SplayMap<K, V> { SplayMap{ root: None, size: 0 } }
+    pub fn new() -> SplayMap<K, V> {
+        SplayMap{ root: None, size: 0 }
+    }
 
     /// Similar to `find`, but fails if the key is not present in the map
     pub fn get<'a>(&'a self, k: &K) -> &'a V {
@@ -122,26 +140,10 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
         self.find_mut(k).expect("key not present in SplayMap")
     }
 
-    /// Visit all values in order
-    #[inline(always)]
-    fn each<'a>(&'a self, f: &fn(&K, &'a V) -> bool) -> bool {
-        self.root.iter().advance(|n| n.each(|a, b| f(a, b)))
-    }
-
-    /// Iterate over the map and mutate the contained values
-    #[inline(always)]
-    fn mutate_values(&mut self, f: &fn(&K, &mut V) -> bool) -> bool {
-        self.root.mut_iter().advance(|n| n.each_mut(|a, b| f(a, b)))
-    }
-
-    /// Visit all keys in order
-    #[inline(always)]
-    fn each_key(&self, f: &fn(&K) -> bool) -> bool { self.each(|k, _| f(k)) }
-
-    /// Visit all values in order
-    #[inline(always)]
-    fn each_value<'a>(&'a self, f: &fn(&'a V) -> bool) -> bool {
-        self.each(|_, v| f(v))
+    /// Moves all values out of this map, transferring ownership to the given
+    /// iterator.
+    pub fn move_iter(&mut self) -> NodeIterator<K, V> {
+        NodeIterator { cur: self.root.take(), remaining: self.size }
     }
 }
 
@@ -151,15 +153,20 @@ impl<K, V> Container for SplayMap<K, V> {
 }
 
 impl<K, V> Mutable for SplayMap<K, V> {
+    /// Clears the tree in O(1) extra space (including the stack). This is
+    /// necessary to prevent stack exhaustion with extremely large trees.
     fn clear(&mut self) {
-        self.root = None;
+        let mut iter = NodeIterator { cur: self.root.take(),
+                                      remaining: self.size };
+        for _ in iter {
+            // ignore, drop the values (and the node)
+        }
         self.size = 0;
     }
 }
 
 impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
     /// Return true if the map contains a value for the specified key
-    #[inline(always)]
     fn contains_key(&self, key: &K) -> bool {
         self.find(key).is_some()
     }
@@ -176,6 +183,14 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // With this in mind, we can unsafely use a mutable version of this tree
         // to invoke the splay operation and return a pointer to the inside of
         // one of the nodes (the pointer won't be deallocated or moved).
+        //
+        // However I'm not entirely sure whether this works with iteration or
+        // not. Arbitrary lookups can occur during iteration, and during
+        // iteration there's some form of "stack" remembering the nodes that
+        // need to get visited. I don't believe that it's safe to allow lookups
+        // while the tree is being iterated. Right now there are no iterators
+        // exposed on this splay tree implementation, and more thought would be
+        // required if there were.
         unsafe {
             let this = cast::transmute_mut(self);
             this.find_mut(key).map(cast::transmute_immut)
@@ -201,7 +216,6 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
     /// Insert a key-value pair into the map. An existing value for a
     /// key is replaced by the new value. Return true if the key did
     /// not already exist in the map.
-    #[inline(always)]
     fn insert(&mut self, key: K, value: V) -> bool {
         self.swap(key, value).is_none()
     }
@@ -244,7 +258,6 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
 
     /// Remove a key-value pair from the map. Return true if the key
     /// was present in the map, otherwise false.
-    #[inline(always)]
     fn remove(&mut self, key: &K) -> bool {
         self.pop(key).is_some()
     }
@@ -281,20 +294,15 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
 }
 
 impl<T> Container for SplaySet<T> {
-    #[inline(always)]
     fn len(&self) -> uint { self.map.len() }
-    #[inline(always)]
-    fn is_empty(&self) -> bool { self.map.is_empty() }
 }
 
 impl<T> Mutable for SplaySet<T> {
-    #[inline(always)]
     fn clear(&mut self) { self.map.clear() }
 }
 
 impl<T: TotalOrd> Set<T> for SplaySet<T> {
     /// Return true if the set contains a value
-    #[inline(always)]
     fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
 
     fn is_disjoint(&self, _: &SplaySet<T>) -> bool { fail!(); }
@@ -305,12 +313,10 @@ impl<T: TotalOrd> Set<T> for SplaySet<T> {
 impl<T: TotalOrd> MutableSet<T> for SplaySet<T> {
     /// Add a value to the set. Return true if the value was not already
     /// present in the set.
-    #[inline(always)]
     fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
 
     /// Remove a value from the set. Return true if the value was
     /// present in the set.
-    #[inline(always)]
     fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
 }
 
@@ -318,9 +324,10 @@ impl<T: TotalOrd> SplaySet<T> {
     /// Creates a new empty set
     pub fn new() -> SplaySet<T> { SplaySet { map: SplayMap::new() } }
 
-    /// Iterates over all values contained in the set
-    pub fn each(&self, f: &fn(&T) -> bool) -> bool {
-      self.map.each_key(f)
+    /// Moves all values out of this set, transferring ownership to the given
+    /// iterator.
+    pub fn move_iter(&mut self) -> NodeSetIterator<T> {
+        NodeSetIterator { inner: self.map.move_iter() }
     }
 }
 
@@ -328,18 +335,6 @@ impl<K, V> Node<K, V> {
     fn new(k: K, v: V, l: Option<~Node<K, V>>,
            r: Option<~Node<K, V>>) -> ~Node<K, V> {
         ~Node{ key: k, value: v, left: l, right: r }
-    }
-
-    fn each<'a>(&'a self, f: &fn(&K, &'a V) -> bool) -> bool {
-        self.left.iter().advance(|l| l.each(|a, b| f(a, b))) &&
-            f(&self.key, &self.value) &&
-            self.right.iter().advance(|r| r.each(|a, b| f(a, b)))
-    }
-
-    fn each_mut(&mut self, f: &fn(&K, &mut V) -> bool) -> bool {
-        self.left.mut_iter().advance(|l| l.each_mut(|a, b| f(a, b))) &&
-            f(&self.key, &mut self.value) &&
-            self.right.mut_iter().advance(|r| r.each_mut(|a, b| f(a, b)))
     }
 
     #[inline(always)]
@@ -353,35 +348,97 @@ impl<K, V> Node<K, V> {
     }
 }
 
-/// Destroys a node in O(1) extra space (including the stack). This is necessary
-/// to prevent stack exhaustion with extremely large trees.
-fn destroy<K, V>(mut cur: ~Node<K, V>) {
-    loop {
-        match cur.pop_left() {
-            Some(node) => {
-                let mut node = node;
-                cur.left = node.pop_right();
-                node.right = Some(cur);
-                cur = node;
-            }
+pub struct NodeIterator<K, V> {
+    priv cur: Option<~Node<K, V>>,
+    priv remaining: uint,
+}
 
-            None => {
-                match cur.pop_right() {
-                    Some(n) => { cur = n; }
-                    None => return
+impl<K, V> Iterator<(K, V)> for NodeIterator<K, V> {
+    fn next(&mut self) -> Option<(K, V)> {
+        match self.cur.take() {
+            None => None,
+            Some(cur) => {
+                let mut cur = cur;
+                loop {
+                    match cur.pop_left() {
+                        Some(node) => {
+                            let mut node = node;
+                            cur.left = node.pop_right();
+                            node.right = Some(cur);
+                            cur = node;
+                        }
+
+                        None => {
+                            self.cur = cur.pop_right();
+                            // left and right fields are both None
+                            let ~Node { key, value, _ } = cur;
+                            self.remaining -= 1;
+                            return Some((key, value));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (uint, Option<uint>) {
+        (self.remaining, Some(self.remaining))
+    }
+}
+
+impl<K, V> DoubleEndedIterator<(K, V)> for NodeIterator<K, V> {
+    // Pretty much the same as the above code, but with left replaced with right
+    // and vice-versa.
+    fn next_back(&mut self) -> Option<(K, V)> {
+        match self.cur.take() {
+            None => None,
+            Some(cur) => {
+                let mut cur = cur;
+                loop {
+                    match cur.pop_right() {
+                        Some(node) => {
+                            let mut node = node;
+                            cur.right = node.pop_left();
+                            node.left = Some(cur);
+                            cur = node;
+                        }
+
+                        None => {
+                            self.cur = cur.pop_left();
+                            // left and right fields are both None
+                            let ~Node { key, value, _ } = cur;
+                            self.remaining -= 1;
+                            return Some((key, value));
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+pub struct NodeSetIterator<T> {
+    priv inner: NodeIterator<T, ()>,
+}
+
+impl<T> DoubleEndedIterator<T> for NodeSetIterator<T> {
+    fn next_back(&mut self) -> Option<T> {
+        self.inner.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<T> Iterator<T> for NodeSetIterator<T> {
+    fn next(&mut self) -> Option<T> {
+        self.inner.next().map(|(k, _)| k)
+    }
+    fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
+}
+
 #[unsafe_destructor]
 impl<K, V> Drop for SplayMap<K, V> {
     fn drop(&mut self) {
-        match self.root.take() {
-            Some(n) => destroy(n),
-            None => {}
-        }
+        // Be sure to not recurse too deep on destruction
+        self.clear();
     }
 }
 
@@ -458,24 +515,6 @@ mod test {
     }
 
     #[test]
-    fn each_simple() {
-        let mut m = SplayMap::new();
-        assert!(m.insert(3, 6));
-        assert!(m.insert(0, 0));
-        assert!(m.insert(4, 8));
-        assert!(m.insert(2, 4));
-        assert!(m.insert(1, 2));
-
-        let mut n = 0;
-        do m.each |k, v| {
-            assert!(*k == n);
-            assert!(*v == n * 2);
-            n += 1;
-            true
-        };
-    }
-
-    #[test]
     fn test_len() {
         let mut m = SplayMap::new();
         assert!(m.insert(3, 6));
@@ -537,6 +576,34 @@ mod test {
         let mut m = SplayMap::new();
         m.insert(1, 1);
         assert!(*m.get(&1) == 1);
+    }
+
+    #[test]
+    fn move_iter() {
+        let mut m = SplayMap::new();
+        m.insert(1, 1);
+        m.insert(2, 1);
+        m.insert(0, 1);
+        let mut cur = 0;
+        for (k, v) in m.move_iter() {
+            assert_eq!(k, cur);
+            assert_eq!(v, 1);
+            cur += 1;
+        }
+    }
+
+    #[test]
+    fn move_iter_backwards() {
+        let mut m = SplayMap::new();
+        m.insert(1, 1);
+        m.insert(2, 1);
+        m.insert(0, 1);
+        let mut cur = 2;
+        for (k, v) in m.move_iter().invert() {
+            assert_eq!(k, cur);
+            assert_eq!(v, 1);
+            cur -= 1;
+        }
     }
 
     #[test] #[should_fail]
