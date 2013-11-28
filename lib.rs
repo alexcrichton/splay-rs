@@ -619,7 +619,7 @@ mod test {
         let mut m = SplaySet::new();
         let mut v = ~[];
 
-        do 400.times {
+        for _ in range(0, 400) {
             let i: int = random();
             m.insert(i);
             v.push(i);
