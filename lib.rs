@@ -275,7 +275,7 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
 
         // TODO: Extra storage of None isn't necessary
         let (value, left, right) = match self.root.take_unwrap() {
-            ~Node {left, right, value, _} => (value, left, right)
+            ~Node {left, right, value, ..} => (value, left, right)
         };
 
         match left {
@@ -371,7 +371,7 @@ impl<K, V> Iterator<(K, V)> for NodeIterator<K, V> {
                         None => {
                             self.cur = cur.pop_right();
                             // left and right fields are both None
-                            let ~Node { key, value, _ } = cur;
+                            let ~Node { key, value, .. } = cur;
                             self.remaining -= 1;
                             return Some((key, value));
                         }
@@ -406,7 +406,7 @@ impl<K, V> DoubleEndedIterator<(K, V)> for NodeIterator<K, V> {
                         None => {
                             self.cur = cur.pop_left();
                             // left and right fields are both None
-                            let ~Node { key, value, _ } = cur;
+                            let ~Node { key, value, .. } = cur;
                             self.remaining -= 1;
                             return Some((key, value));
                         }
