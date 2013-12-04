@@ -193,7 +193,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // required if there were.
         unsafe {
             let this = cast::transmute_mut(self);
-            this.find_mut(key).map(cast::transmute_immut)
+            this.find_mut(key).map(|x| &*x)
         }
     }
 }
