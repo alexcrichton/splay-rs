@@ -15,6 +15,7 @@
 //!         println!("{} => {}", k, v);
 //!     }
 
+#[crate_id = "splay"];
 #[license = "MIT"];
 
 use std::cast;

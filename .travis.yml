@@ -5,3 +5,9 @@ install:
   - sudo apt-get install rust-nightly
 script:
   - rustc --test lib.rs && ./lib
+  - rustdoc lib.rs
+after_script:
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+env:
+  global:
+    - secure: JpFRz4PpsLDdW1PuGkylRPS1qw3D7NrRyaTGK/ulZHM5b0qCC4F9agSuxHWktCNXL912VTEsHDTSnICBffhBZbg0KxcLrwtrp1s1z+rQUj9CPj32GQeql71YspDtbnkO1X+08ivSF4HQDKf29jHRo1SMcKDmEG4DrmHUbgnlZF8=
