@@ -600,7 +600,7 @@ mod test {
         m.insert(2, 1);
         m.insert(0, 1);
         let mut cur = 2;
-        for (k, v) in m.move_iter().invert() {
+        for (k, v) in m.move_iter().rev() {
             assert_eq!(k, cur);
             assert_eq!(v, 1);
             cur -= 1;
