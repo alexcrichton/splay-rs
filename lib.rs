@@ -19,7 +19,7 @@
 #[license = "MIT"];
 
 use std::cast;
-use std::util;
+use std::mem;
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
@@ -72,17 +72,17 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
                             // rotate this node right if necessary
                             if key.cmp(&left.key) == Less {
                                 // A bit odd, but avoids drop glue
-                                util::swap(&mut node.left, &mut left.right);
-                                util::swap(&mut left, node);
-                                let none = util::replace(&mut node.right,
+                                mem::swap(&mut node.left, &mut left.right);
+                                mem::swap(&mut left, node);
+                                let none = mem::replace(&mut node.right,
                                                          Some(left));
-                                match util::replace(&mut node.left, none) {
+                                match mem::replace(&mut node.left, none) {
                                     Some(l) => { left = l; }
                                     None    => { break }
                                 }
                             }
 
-                            let prev = util::replace(node, left);
+                            let prev = mem::replace(node, left);
                             forget(r, Some(prev));
                             let tmp = r;
                             r = &mut tmp.get_mut_ref().left;
@@ -99,16 +99,16 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
                         Some(right) => {
                             let mut right = right;
                             if key.cmp(&right.key) == Greater {
-                                util::swap(&mut node.right, &mut right.left);
-                                util::swap(&mut right, node);
-                                let none = util::replace(&mut node.left,
+                                mem::swap(&mut node.right, &mut right.left);
+                                mem::swap(&mut right, node);
+                                let none = mem::replace(&mut node.left,
                                                          Some(right));
-                                match util::replace(&mut node.right, none) {
+                                match mem::replace(&mut node.right, none) {
                                     Some(r) => { right = r; }
                                     None    => { break }
                                 }
                             }
-                            let prev = util::replace(node, right);
+                            let prev = mem::replace(node, right);
                             forget(l, Some(prev));
                             let tmp = l;
                             l = &mut tmp.get_mut_ref().right;
@@ -118,8 +118,8 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
             }
         }
 
-        util::swap(l, &mut node.left);
-        util::swap(r, &mut node.right);
+        mem::swap(l, &mut node.left);
+        mem::swap(r, &mut node.right);
     }
 
     forget(&mut node.left, newright);
@@ -234,20 +234,20 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
 
                 match key.cmp(&root.key) {
                     Equal => {
-                        let old = util::replace(&mut root.value, value);
+                        let old = mem::replace(&mut root.value, value);
                         return Some(old);
                     }
                     /* TODO: would unsafety help perf here? */
                     Less => {
                         let left = root.pop_left();
                         let new = Node::new(key, value, left, None);
-                        let prev = util::replace(root, new);
+                        let prev = mem::replace(root, new);
                         forget(&mut root.right, Some(prev));
                     }
                     Greater => {
                         let right = root.pop_right();
                         let new = Node::new(key, value, None, right);
-                        let prev = util::replace(root, new);
+                        let prev = mem::replace(root, new);
                         forget(&mut root.left, Some(prev));
                     }
                 }
@@ -340,12 +340,12 @@ impl<K, V> Node<K, V> {
 
     #[inline(always)]
     fn pop_left(&mut self) -> Option<~Node<K, V>> {
-        util::replace(&mut self.left, None)
+        mem::replace(&mut self.left, None)
     }
 
     #[inline(always)]
     fn pop_right(&mut self) -> Option<~Node<K, V>> {
-        util::replace(&mut self.right, None)
+        mem::replace(&mut self.right, None)
     }
 }
 
@@ -450,7 +450,7 @@ fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
         assert!(slot.is_none());
     }
     if cfg!(maybesuperfast) {
-        let prev = util::replace(slot, node);
+        let prev = mem::replace(slot, node);
         unsafe { cast::forget(prev) }
     } else {
         *slot = node;
