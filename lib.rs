@@ -4,31 +4,37 @@
 //!
 //! # Example
 //!
-//!     use splay::SplayMap;
+//! ```rust
+//! use splay::SplayMap;
 //!
-//!     let mut map = SplayMap::new();
-//!     map.insert("foo", "bar");
-//!     map.insert("hello", "world");
-//!     map.insert("splay", "tree");
+//! let mut map = SplayMap::new();
+//! map.insert("foo", "bar");
+//! map.insert("hello", "world");
+//! map.insert("splay", "tree");
 //!
-//!     for (k, v) in map.move_iter() {
-//!         println!("{} => {}", k, v);
-//!     }
+//! for (k, v) in map.move_iter() {
+//!     println!("{} => {}", k, v);
+//! }
+//! ```
 
 #[crate_id = "splay"];
+#[crate_type = "rlib"];
+#[crate_type = "dylib"];
+#[deny(warnings)];
 #[license = "MIT"];
 
 use std::cast;
 use std::mem;
+use std::kinds::marker;
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
 /// This version of splaying is a top-down splay operation.
-#[no_freeze] // lookups are mutating operations
 #[deriving(Clone)]
 pub struct SplayMap<K, V> {
     priv root: Option<~Node<K, V>>,
     priv size: uint,
+    priv marker: marker::NoFreeze, // lookups mutate the tree
 }
 
 #[deriving(Clone)]
@@ -128,7 +134,7 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
 
 impl<K: TotalOrd, V> SplayMap<K, V> {
     pub fn new() -> SplayMap<K, V> {
-        SplayMap{ root: None, size: 0 }
+        SplayMap{ root: None, size: 0, marker: marker::NoFreeze }
     }
 
     /// Similar to `find`, but fails if the key is not present in the map

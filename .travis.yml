@@ -4,7 +4,9 @@ before_install:
 install:
   - sudo apt-get install rust-nightly
 script:
+  - rustc lib.rs
   - rustc --test lib.rs && ./splay
+  - rustdoc --test lib.rs -L.
   - rustdoc lib.rs
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
