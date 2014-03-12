@@ -452,7 +452,7 @@ impl<K, V> Drop for SplayMap<K, V> {
 #[inline(always)]
 fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
     use std::cast;
-    if cfg!(debug) {
+    if cfg!(test) {
         assert!(slot.is_none());
     }
     if cfg!(maybesuperfast) {
@@ -465,6 +465,8 @@ fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
 
 #[cfg(test)]
 mod test {
+    extern crate rand;
+
     use super::{SplayMap, SplaySet};
 
     // Lots of these are shamelessly stolen from the TreeMap tests, it'd be
@@ -622,7 +624,7 @@ mod test {
 
     #[test]
     fn large() {
-        use std::rand::random;
+        use test::rand::random;
         let mut m = SplaySet::new();
         let mut v = ~[];
 
