@@ -468,6 +468,7 @@ mod test {
     extern crate rand;
 
     use super::{SplayMap, SplaySet};
+    use std::vec_ng::Vec;
 
     // Lots of these are shamelessly stolen from the TreeMap tests, it'd be
     // awesome if they could share them...
@@ -626,7 +627,7 @@ mod test {
     fn large() {
         use test::rand::random;
         let mut m = SplaySet::new();
-        let mut v = ~[];
+        let mut v = Vec::new();
 
         for _ in range(0, 400) {
             let i: int = random();
