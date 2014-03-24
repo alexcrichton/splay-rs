@@ -34,7 +34,7 @@ use std::kinds::marker;
 pub struct SplayMap<K, V> {
     priv root: Option<~Node<K, V>>,
     priv size: uint,
-    priv marker: marker::NoFreeze, // lookups mutate the tree
+    priv marker: marker::NoShare, // lookups mutate the tree
 }
 
 #[deriving(Clone)]
@@ -71,29 +71,29 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
                 Equal => { break }
 
                 Less => {
-                    match node.pop_left() {
-                        None => { break }
-                        Some(left) => {
-                            let mut left = left;
-                            // rotate this node right if necessary
-                            if key.cmp(&left.key) == Less {
-                                // A bit odd, but avoids drop glue
-                                mem::swap(&mut node.left, &mut left.right);
-                                mem::swap(&mut left, node);
-                                let none = mem::replace(&mut node.right,
-                                                         Some(left));
-                                match mem::replace(&mut node.left, none) {
-                                    Some(l) => { left = l; }
-                                    None    => { break }
-                                }
-                            }
-
-                            let prev = mem::replace(node, left);
-                            forget(r, Some(prev));
-                            let tmp = r;
-                            r = &mut tmp.get_mut_ref().left;
+                    let mut left = match node.pop_left() {
+                        Some(left) => left, None => break
+                    };
+                    // rotate this node right if necessary
+                    if key.cmp(&left.key) == Less {
+                        // A bit odd, but avoids drop glue
+                        mem::swap(&mut node.left, &mut left.right);
+                        mem::swap(&mut left, node);
+                        let none = mem::replace(&mut node.right, Some(left));
+                        match mem::replace(&mut node.left, none) {
+                            Some(l) => { left = l; }
+                            None    => { break }
                         }
                     }
+
+                    let prev = mem::replace(node, left);
+                    forget(r, Some(prev));
+                    let tmp = r;
+                    match *tmp {
+                        Some(ref mut l) => { r = &mut l.left; }
+                        None => { r = tmp; }
+                    }
+                    // r = &mut tmp.get_mut_ref().left;
                 }
 
                 // If you look closely, you may have seen some similar code
@@ -102,8 +102,7 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
                     match node.pop_right() {
                         None => { break }
                         // rotate left if necessary
-                        Some(right) => {
-                            let mut right = right;
+                        Some(mut right) => {
                             if key.cmp(&right.key) == Greater {
                                 mem::swap(&mut node.right, &mut right.left);
                                 mem::swap(&mut right, node);
@@ -117,7 +116,11 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
                             let prev = mem::replace(node, right);
                             forget(l, Some(prev));
                             let tmp = l;
-                            l = &mut tmp.get_mut_ref().right;
+                            // l = &mut tmp.get_mut_ref().right;
+                    match *tmp {
+                        Some(ref mut r) => { l = &mut r.right; }
+                        None => { l = tmp; }
+                    }
                         }
                     }
                 }
@@ -134,7 +137,7 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
 
 impl<K: TotalOrd, V> SplayMap<K, V> {
     pub fn new() -> SplayMap<K, V> {
-        SplayMap{ root: None, size: 0, marker: marker::NoFreeze }
+        SplayMap{ root: None, size: 0, marker: marker::NoShare }
     }
 
     /// Similar to `find`, but fails if the key is not present in the map
@@ -212,7 +215,7 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
             None => { return None; }
             Some(ref mut root) => {
                 splay(key, root);
-                if key.equals(&root.key) {
+                if *key == root.key {
                     return Some(&mut root.value);
                 }
                 return None;
@@ -276,7 +279,7 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
             None => { return None; }
             Some(ref mut root) => {
                 splay(key, root);
-                if !key.equals(&root.key) { return None; }
+                if *key != root.key { return None }
             }
         }
 
