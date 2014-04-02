@@ -17,11 +17,11 @@
 //! }
 //! ```
 
-#[crate_id = "splay"];
-#[crate_type = "rlib"];
-#[crate_type = "dylib"];
-#[deny(warnings)];
-#[license = "MIT"];
+#![crate_id = "splay"]
+#![crate_type = "rlib"]
+#![crate_type = "dylib"]
+#![deny(warnings)]
+#![license = "MIT"]
 
 use std::cast;
 use std::mem;
@@ -32,9 +32,9 @@ use std::kinds::marker;
 /// This version of splaying is a top-down splay operation.
 #[deriving(Clone)]
 pub struct SplayMap<K, V> {
-    priv root: Option<~Node<K, V>>,
-    priv size: uint,
-    priv marker: marker::NoShare, // lookups mutate the tree
+    root: Option<~Node<K, V>>,
+    size: uint,
+    marker: marker::NoShare, // lookups mutate the tree
 }
 
 #[deriving(Clone)]
@@ -359,8 +359,8 @@ impl<K, V> Node<K, V> {
 }
 
 pub struct NodeIterator<K, V> {
-    priv cur: Option<~Node<K, V>>,
-    priv remaining: uint,
+    cur: Option<~Node<K, V>>,
+    remaining: uint,
 }
 
 impl<K, V> Iterator<(K, V)> for NodeIterator<K, V> {
@@ -428,7 +428,7 @@ impl<K, V> DoubleEndedIterator<(K, V)> for NodeIterator<K, V> {
 }
 
 pub struct NodeSetIterator<T> {
-    priv inner: NodeIterator<T, ()>,
+    inner: NodeIterator<T, ()>,
 }
 
 impl<T> DoubleEndedIterator<T> for NodeSetIterator<T> {
