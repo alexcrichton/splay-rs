@@ -32,7 +32,7 @@ use std::kinds::marker;
 /// This version of splaying is a top-down splay operation.
 #[deriving(Clone)]
 pub struct SplayMap<K, V> {
-    root: Option<~Node<K, V>>,
+    root: Option<Box<Node<K, V>>>,
     size: uint,
     marker: marker::NoShare, // lookups mutate the tree
 }
@@ -46,15 +46,15 @@ pub struct SplaySet<T> {
 struct Node<K, V> {
     key: K,
     value: V,
-    left: Option<~Node<K, V>>,
-    right: Option<~Node<K, V>>,
+    left: Option<Box<Node<K, V>>>,
+    right: Option<Box<Node<K, V>>>,
 }
 
 /// Performs a top-down splay operation on a tree rooted at `node`. This will
 /// modify the pointer to contain the new root of the tree once the splay
 /// operation is done. When finished, if `key` is in the tree, it will be at the
 /// root. Otherwise the closest key to the specified key will be at the root.
-fn splay<K: TotalOrd, V>(key: &K, node: &mut ~Node<K, V>) {
+fn splay<K: TotalOrd, V>(key: &K, node: &mut Box<Node<K, V>>) {
     let mut newleft = None;
     let mut newright = None;
 
@@ -202,7 +202,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // exposed on this splay tree implementation, and more thought would be
         // required if there were.
         unsafe {
-            let this = cast::transmute_mut(self);
+            let this = cast::transmute::<&_, &mut SplayMap<K, V>>(self);
             this.find_mut(key).map(|x| &*x)
         }
     }
@@ -285,7 +285,7 @@ impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
 
         // TODO: Extra storage of None isn't necessary
         let (value, left, right) = match self.root.take_unwrap() {
-            ~Node {left, right, value, ..} => (value, left, right)
+            box Node {left, right, value, ..} => (value, left, right)
         };
 
         match left {
@@ -342,24 +342,25 @@ impl<T: TotalOrd> SplaySet<T> {
 }
 
 impl<K, V> Node<K, V> {
-    fn new(k: K, v: V, l: Option<~Node<K, V>>,
-           r: Option<~Node<K, V>>) -> ~Node<K, V> {
-        ~Node{ key: k, value: v, left: l, right: r }
+    fn new(k: K, v: V,
+           l: Option<Box<Node<K, V>>>,
+           r: Option<Box<Node<K, V>>>) -> Box<Node<K, V>> {
+        box Node{ key: k, value: v, left: l, right: r }
     }
 
     #[inline(always)]
-    fn pop_left(&mut self) -> Option<~Node<K, V>> {
+    fn pop_left(&mut self) -> Option<Box<Node<K, V>>> {
         mem::replace(&mut self.left, None)
     }
 
     #[inline(always)]
-    fn pop_right(&mut self) -> Option<~Node<K, V>> {
+    fn pop_right(&mut self) -> Option<Box<Node<K, V>>> {
         mem::replace(&mut self.right, None)
     }
 }
 
 pub struct NodeIterator<K, V> {
-    cur: Option<~Node<K, V>>,
+    cur: Option<Box<Node<K, V>>>,
     remaining: uint,
 }
 
@@ -381,7 +382,7 @@ impl<K, V> Iterator<(K, V)> for NodeIterator<K, V> {
                         None => {
                             self.cur = cur.pop_right();
                             // left and right fields are both None
-                            let ~Node { key, value, .. } = cur;
+                            let box Node { key, value, .. } = cur;
                             self.remaining -= 1;
                             return Some((key, value));
                         }
@@ -416,7 +417,7 @@ impl<K, V> DoubleEndedIterator<(K, V)> for NodeIterator<K, V> {
                         None => {
                             self.cur = cur.pop_left();
                             // left and right fields are both None
-                            let ~Node { key, value, .. } = cur;
+                            let box Node { key, value, .. } = cur;
                             self.remaining -= 1;
                             return Some((key, value));
                         }
@@ -453,7 +454,8 @@ impl<K, V> Drop for SplayMap<K, V> {
 }
 
 #[inline(always)]
-fn forget<K, V>(slot: &mut Option<~Node<K, V>>, node: Option<~Node<K, V>>) {
+fn forget<K, V>(slot: &mut Option<Box<Node<K, V>>>,
+                node: Option<Box<Node<K, V>>>) {
     use std::cast;
     if cfg!(test) {
         assert!(slot.is_none());
