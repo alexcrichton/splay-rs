@@ -23,7 +23,6 @@
 #![deny(warnings)]
 #![license = "MIT"]
 
-use std::cast;
 use std::mem;
 use std::kinds::marker;
 
@@ -202,7 +201,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
         // exposed on this splay tree implementation, and more thought would be
         // required if there were.
         unsafe {
-            let this = cast::transmute::<&_, &mut SplayMap<K, V>>(self);
+            let this = mem::transmute::<&_, &mut SplayMap<K, V>>(self);
             this.find_mut(key).map(|x| &*x)
         }
     }
@@ -456,13 +455,12 @@ impl<K, V> Drop for SplayMap<K, V> {
 #[inline(always)]
 fn forget<K, V>(slot: &mut Option<Box<Node<K, V>>>,
                 node: Option<Box<Node<K, V>>>) {
-    use std::cast;
     if cfg!(test) {
         assert!(slot.is_none());
     }
     if cfg!(maybesuperfast) {
         let prev = mem::replace(slot, node);
-        unsafe { cast::forget(prev) }
+        unsafe { mem::forget(prev) }
     } else {
         *slot = node;
     }
