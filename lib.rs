@@ -19,12 +19,23 @@
 
 #![crate_id = "splay"]
 #![crate_type = "rlib"]
-#![crate_type = "dylib"]
-#![deny(warnings)]
 #![license = "MIT"]
+#![feature(globs, phase)]
+#![no_std]
+#![deny(warnings)]
 
-use std::mem;
-use std::kinds::marker;
+#[phase(syntax, link)]
+extern crate core;
+extern crate alloc;
+
+#[cfg(test)] #[phase(syntax, link)] extern crate std;
+#[cfg(test)] extern crate native;
+
+use core::prelude::*;
+
+use alloc::owned::Box;
+use core::mem;
+use core::kinds::marker;
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
@@ -141,12 +152,18 @@ impl<K: TotalOrd, V> SplayMap<K, V> {
 
     /// Similar to `find`, but fails if the key is not present in the map
     pub fn get<'a>(&'a self, k: &K) -> &'a V {
-        self.find(k).expect("key not present in SplayMap")
+        match self.find(k) {
+            Some(v) => v,
+            None => fail!("key not present in SplayMap"),
+        }
     }
 
     /// Similar to `find_mut`, but fails if the key is not present in the map
     pub fn get_mut<'a>(&'a mut self, k: &K) -> &'a mut V {
-        self.find_mut(k).expect("key not present in SplayMap")
+        match self.find_mut(k) {
+            Some(v) => v,
+            None => fail!("key not present in SplayMap"),
+        }
     }
 
     /// Moves all values out of this map, transferring ownership to the given
@@ -470,6 +487,8 @@ fn forget<K, V>(slot: &mut Option<Box<Node<K, V>>>,
 mod test {
     extern crate rand;
 
+    use std::prelude::*;
+
     use super::{SplayMap, SplaySet};
 
     // Lots of these are shamelessly stolen from the TreeMap tests, it'd be
@@ -641,4 +660,9 @@ mod test {
             assert!(m.contains(i));
         }
     }
+}
+
+#[cfg(not(test))]
+mod std {
+    pub use core::{option, fmt, clone};
 }
