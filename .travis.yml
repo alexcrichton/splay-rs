@@ -5,8 +5,8 @@ install:
   - (cd rust-nightly-x86_64-unknown-linux-gnu/ && sudo ./install.sh)
 script:
   - rustc --version
-  - rustc lib.rs
-  - rustc --test lib.rs && ./splay
+  - rustc lib.rs -D warnings
+  - rustc --test lib.rs -D warnings && ./splay
   - rustdoc --test lib.rs -L.
   - rustdoc lib.rs
 after_script:
