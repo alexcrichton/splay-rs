@@ -484,8 +484,6 @@ fn forget<K, V>(slot: &mut Option<Box<Node<K, V>>>,
 
 #[cfg(test)]
 mod test {
-    extern crate rand;
-
     use std::prelude::*;
 
     use super::{SplayMap, SplaySet};
@@ -645,7 +643,7 @@ mod test {
 
     #[test]
     fn large() {
-        use test::rand::random;
+        use std::rand::random;
         let mut m = SplaySet::new();
         let mut v = Vec::new();
 
