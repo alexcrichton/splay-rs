@@ -1,6 +1,6 @@
 //! Contains an implementation of splay trees where each node has a key/value
 //! pair to be used in maps and sets. The only requirement is that the key must
-//! implement the TotalOrd trait.
+//! implement the Ord trait.
 //!
 //! # Example
 //!
@@ -63,7 +63,7 @@ struct Node<K, V> {
 /// modify the pointer to contain the new root of the tree once the splay
 /// operation is done. When finished, if `key` is in the tree, it will be at the
 /// root. Otherwise the closest key to the specified key will be at the root.
-fn splay<K: TotalOrd, V>(key: &K, node: &mut Box<Node<K, V>>) {
+fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
     let mut newleft = None;
     let mut newright = None;
 
@@ -144,7 +144,7 @@ fn splay<K: TotalOrd, V>(key: &K, node: &mut Box<Node<K, V>>) {
     forget(&mut node.right, newleft);
 }
 
-impl<K: TotalOrd, V> SplayMap<K, V> {
+impl<K: Ord, V> SplayMap<K, V> {
     pub fn new() -> SplayMap<K, V> {
         SplayMap{ root: None, size: 0, marker: marker::NoShare }
     }
@@ -190,7 +190,7 @@ impl<K, V> Mutable for SplayMap<K, V> {
     }
 }
 
-impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
+impl<K: Ord, V> Map<K, V> for SplayMap<K, V> {
     /// Return true if the map contains a value for the specified key
     fn contains_key(&self, key: &K) -> bool {
         self.find(key).is_some()
@@ -223,7 +223,7 @@ impl<K: TotalOrd, V> Map<K, V> for SplayMap<K, V> {
     }
 }
 
-impl<K: TotalOrd, V> MutableMap<K, V> for SplayMap<K, V> {
+impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
     /// Return a mutable reference to the value corresponding to the key
     fn find_mut<'a>(&'a mut self, key: &K) -> Option<&'a mut V> {
         match self.root {
@@ -326,7 +326,7 @@ impl<T> Mutable for SplaySet<T> {
     fn clear(&mut self) { self.map.clear() }
 }
 
-impl<T: TotalOrd> Set<T> for SplaySet<T> {
+impl<T: Ord> Set<T> for SplaySet<T> {
     /// Return true if the set contains a value
     fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
 
@@ -335,7 +335,7 @@ impl<T: TotalOrd> Set<T> for SplaySet<T> {
     fn is_superset(&self, _: &SplaySet<T>) -> bool { fail!(); }
 }
 
-impl<T: TotalOrd> MutableSet<T> for SplaySet<T> {
+impl<T: Ord> MutableSet<T> for SplaySet<T> {
     /// Add a value to the set. Return true if the value was not already
     /// present in the set.
     fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
@@ -345,7 +345,7 @@ impl<T: TotalOrd> MutableSet<T> for SplaySet<T> {
     fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
 }
 
-impl<T: TotalOrd> SplaySet<T> {
+impl<T: Ord> SplaySet<T> {
     /// Creates a new empty set
     pub fn new() -> SplaySet<T> { SplaySet { map: SplayMap::new() } }
 
