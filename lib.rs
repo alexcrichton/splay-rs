@@ -26,6 +26,7 @@
 #[phase(syntax, link)]
 extern crate core;
 extern crate alloc;
+extern crate collections;
 
 #[cfg(test)] #[phase(syntax, link)] extern crate std;
 #[cfg(test)] extern crate native;
@@ -35,6 +36,7 @@ use core::prelude::*;
 use alloc::owned::Box;
 use core::mem;
 use core::kinds::marker;
+use collections::{Collection, Map, MutableMap, Mutable, Set, MutableSet};
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
@@ -172,7 +174,7 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 }
 
-impl<K, V> Container for SplayMap<K, V> {
+impl<K, V> Collection for SplayMap<K, V> {
     fn len(&self) -> uint { self.size }
     fn is_empty(&self) -> bool { self.len() == 0 }
 }
@@ -318,7 +320,7 @@ impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
     }
 }
 
-impl<T> Container for SplaySet<T> {
+impl<T> Collection for SplaySet<T> {
     fn len(&self) -> uint { self.map.len() }
 }
 
