@@ -23,7 +23,7 @@
 #![feature(globs, phase)]
 #![no_std]
 
-#[phase(syntax, link)]
+#[phase(plugin, link)]
 extern crate core;
 extern crate alloc;
 extern crate collections;
