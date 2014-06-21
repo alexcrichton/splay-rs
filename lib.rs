@@ -20,7 +20,7 @@
 #![crate_id = "splay"]
 #![crate_type = "rlib"]
 #![license = "MIT"]
-#![feature(globs, phase)]
+#![feature(globs, phase, unsafe_destructor)]
 #![no_std]
 
 #[phase(plugin, link)]
