@@ -2,7 +2,7 @@
 
 name = "splay"
 version = "0.1.0"
-authors = ["alex@crichton.co"]
+authors = ["alex@alexcrichton.com"]
 
 [[lib]]
 
