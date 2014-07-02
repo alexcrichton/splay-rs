@@ -9,8 +9,7 @@ install:
 script:
   - cargo build
   - cargo test
-  - rustc --version
-  - rustdoc --test lib.rs -L.
+  - rustdoc --test lib.rs -L target
   - rustdoc lib.rs
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
