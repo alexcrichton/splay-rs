@@ -7,12 +7,11 @@ install:
   - sudo apt-get update
   - sudo apt-get install cargo
 script:
+  - cargo build
+  - cargo test
   - rustc --version
-  - rustc lib.rs -D warnings
-  - rustc --test lib.rs -D warnings && ./splay
   - rustdoc --test lib.rs -L.
   - rustdoc lib.rs
-  - cargo build
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
 env:

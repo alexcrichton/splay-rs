@@ -22,6 +22,7 @@
 #![license = "MIT"]
 #![feature(globs, phase, unsafe_destructor)]
 #![no_std]
+#![deny(warnings)]
 
 #[phase(plugin, link)]
 extern crate core;
