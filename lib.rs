@@ -17,7 +17,7 @@
 //! }
 //! ```
 
-#![crate_id = "splay"]
+#![crate_name = "splay"]
 #![crate_type = "rlib"]
 #![license = "MIT"]
 #![feature(globs, phase, unsafe_destructor)]
