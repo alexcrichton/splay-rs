@@ -7,7 +7,7 @@ This repo is provided as a Cargo package, simply adjust your `Cargo.toml` to inc
 
 ```
 [dependencies.splay]
-git = "https://github.com/alexcrichton/rs-splay"
+git = "https://github.com/alexcrichton/splay-rs"
 ```
 
 This code is all released under the MIT license. The implementation of splaying
