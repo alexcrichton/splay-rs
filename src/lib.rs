@@ -152,7 +152,7 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 
     /// Similar to `find`, but fails if the key is not present in the map
-    pub fn get<'a>(&'a self, k: &K) -> &'a V {
+    pub fn get(&self, k: &K) -> &V {
         match self.find(k) {
             Some(v) => v,
             None => fail!("key not present in SplayMap"),
@@ -160,7 +160,7 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 
     /// Similar to `find_mut`, but fails if the key is not present in the map
-    pub fn get_mut<'a>(&'a mut self, k: &K) -> &'a mut V {
+    pub fn get_mut(&mut self, k: &K) -> &mut V {
         match self.find_mut(k) {
             Some(v) => v,
             None => fail!("key not present in SplayMap"),
@@ -199,7 +199,7 @@ impl<K: Ord, V> Map<K, V> for SplayMap<K, V> {
     }
 
     /// Return a reference to the value corresponding to the key
-    fn find<'a>(&'a self, key: &K) -> Option<&'a V> {
+    fn find(&self, key: &K) -> Option<&V> {
         // Splay trees are self-modifying, so they can't exactly operate with
         // the immutable self given by the Map interface for this method. It can
         // be guaranteed, however, that the callers of this method are not
@@ -227,7 +227,7 @@ impl<K: Ord, V> Map<K, V> for SplayMap<K, V> {
 
 impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
     /// Return a mutable reference to the value corresponding to the key
-    fn find_mut<'a>(&'a mut self, key: &K) -> Option<&'a mut V> {
+    fn find_mut(&mut self, key: &K) -> Option<&mut V> {
         match self.root {
             None => { return None; }
             Some(ref mut root) => {
