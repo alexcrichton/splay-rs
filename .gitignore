@@ -1,3 +1,2 @@
-.rust
-build
-target
+/target
+/Cargo.lock

@@ -399,7 +399,8 @@ impl<K, V> Iterator<(K, V)> for NodeIterator<K, V> {
                         None => {
                             self.cur = cur.pop_right();
                             // left and right fields are both None
-                            let box Node { key, value, .. } = cur;
+                            let node = *cur;
+                            let Node { key, value, .. } = node;
                             self.remaining -= 1;
                             return Some((key, value));
                         }
@@ -434,7 +435,8 @@ impl<K, V> DoubleEndedIterator<(K, V)> for NodeIterator<K, V> {
                         None => {
                             self.cur = cur.pop_left();
                             // left and right fields are both None
-                            let box Node { key, value, .. } = cur;
+                            let node = *cur;
+                            let Node { key, value, .. } = node;
                             self.remaining -= 1;
                             return Some((key, value));
                         }

@@ -1,9 +1,14 @@
 # Splay Trees
 
+[![Build Status](https://travis-ci.org/alexcrichton/splay-rs.svg?branch=master)](https://travis-ci.org/alexcrichton/splay-rs)
+
+[Documentation](http://alexcrichton.com/splay-rs/splay/index.html)
+
 This is an implementation of splay trees written in Rust. This was mostly a
 proof of concept work, and it ended up working out well!
 
-This repo is provided as a Cargo package, simply adjust your `Cargo.toml` to include
+This repo is provided as a Cargo package, simply adjust your `Cargo.toml` to
+include
 
 ```
 [dependencies.splay]
@@ -11,4 +16,5 @@ git = "https://github.com/alexcrichton/splay-rs"
 ```
 
 This code is all released under the MIT license. The implementation of splaying
-is largely based on ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
+is largely based on
+ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
