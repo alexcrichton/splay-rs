@@ -45,7 +45,7 @@ use collections::{Collection, Map, MutableMap, Mutable, Set, MutableSet};
 pub struct SplayMap<K, V> {
     root: Option<Box<Node<K, V>>>,
     size: uint,
-    marker: marker::NoShare, // lookups mutate the tree
+    marker: marker::NoSync, // lookups mutate the tree
 }
 
 #[deriving(Clone)]
@@ -148,7 +148,7 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
 
 impl<K: Ord, V> SplayMap<K, V> {
     pub fn new() -> SplayMap<K, V> {
-        SplayMap{ root: None, size: 0, marker: marker::NoShare }
+        SplayMap{ root: None, size: 0, marker: marker::NoSync }
     }
 
     /// Similar to `find`, but fails if the key is not present in the map
