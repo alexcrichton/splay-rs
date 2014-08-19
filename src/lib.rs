@@ -36,7 +36,7 @@ use core::prelude::*;
 use alloc::owned::Box;
 use core::mem;
 use core::kinds::marker;
-use collections::{Collection, Map, MutableMap, Mutable, Set, MutableSet};
+use collections::{Map, MutableMap, Mutable, Set, MutableSet};
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
