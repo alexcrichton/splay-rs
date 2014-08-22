@@ -97,14 +97,9 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
                         }
                     }
 
-                    let prev = mem::replace(node, left);
-                    forget(r, Some(prev));
+                    *r = Some(mem::replace(node, left));
                     let tmp = r;
-                    match *tmp {
-                        Some(ref mut l) => { r = &mut l.left; }
-                        None => { r = tmp; }
-                    }
-                    // r = &mut tmp.get_mut_ref().left;
+                    r = &mut tmp.as_mut().unwrap().left;
                 }
 
                 // If you look closely, you may have seen some similar code
@@ -124,14 +119,9 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
                                     None    => { break }
                                 }
                             }
-                            let prev = mem::replace(node, right);
-                            forget(l, Some(prev));
+                            *l = Some(mem::replace(node, right));
                             let tmp = l;
-                            // l = &mut tmp.get_mut_ref().right;
-                    match *tmp {
-                        Some(ref mut r) => { l = &mut r.right; }
-                        None => { l = tmp; }
-                    }
+                            l = &mut tmp.as_mut().unwrap().right;
                         }
                     }
                 }
@@ -142,8 +132,8 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
         mem::swap(r, &mut node.right);
     }
 
-    forget(&mut node.left, newright);
-    forget(&mut node.right, newleft);
+    node.left = newright;
+    node.right = newleft;
 }
 
 impl<K: Ord, V> SplayMap<K, V> {
@@ -251,10 +241,7 @@ impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
     /// present in the map, that value is returned. Otherwise None is returned.
     fn swap(&mut self, key: K, value: V) -> Option<V> {
         match self.root {
-            None => {
-                /* is forget necessary or is llvm smarter than that? */
-                forget(&mut self.root, Some(Node::new(key, value, None, None)));
-            }
+            None => self.root = Some(Node::new(key, value, None, None)),
             Some(ref mut root) => {
                 splay(&key, root);
 
@@ -268,13 +255,13 @@ impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
                         let left = root.pop_left();
                         let new = Node::new(key, value, left, None);
                         let prev = mem::replace(root, new);
-                        forget(&mut root.right, Some(prev));
+                        root.right = Some(prev);
                     }
                     Greater => {
                         let right = root.pop_right();
                         let new = Node::new(key, value, None, right);
                         let prev = mem::replace(root, new);
-                        forget(&mut root.left, Some(prev));
+                        root.left = Some(prev);
                     }
                 }
             }
@@ -306,12 +293,12 @@ impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
         };
 
         match left {
-            None => { forget(&mut self.root, right); }
+            None => self.root = right,
             Some(node) => {
                 let mut node = node;
                 splay(key, &mut node);
-                forget(&mut node.right, right);
-                forget(&mut self.root, Some(node));
+                node.right = right;
+                self.root = Some(node);
             }
         }
 
@@ -469,20 +456,6 @@ impl<K, V> Drop for SplayMap<K, V> {
     fn drop(&mut self) {
         // Be sure to not recurse too deep on destruction
         self.clear();
-    }
-}
-
-#[inline(always)]
-fn forget<K, V>(slot: &mut Option<Box<Node<K, V>>>,
-                node: Option<Box<Node<K, V>>>) {
-    if cfg!(test) {
-        assert!(slot.is_none());
-    }
-    if cfg!(maybesuperfast) {
-        let prev = mem::replace(slot, node);
-        unsafe { mem::forget(prev) }
-    } else {
-        *slot = node;
     }
 }
 
