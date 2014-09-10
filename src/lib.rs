@@ -288,7 +288,7 @@ impl<K: Ord, V> MutableMap<K, V> for SplayMap<K, V> {
         }
 
         // TODO: Extra storage of None isn't necessary
-        let (value, left, right) = match self.root.take_unwrap() {
+        let (value, left, right) = match self.root.take().unwrap() {
             box Node {left, right, value, ..} => (value, left, right)
         };
 
