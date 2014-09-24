@@ -10,7 +10,7 @@ proof of concept work, and it ended up working out well!
 This repo is provided as a Cargo package, simply adjust your `Cargo.toml` to
 include
 
-```
+```toml
 [dependencies.splay]
 git = "https://github.com/alexcrichton/splay-rs"
 ```
