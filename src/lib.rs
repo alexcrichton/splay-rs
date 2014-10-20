@@ -20,23 +20,11 @@
 #![crate_name = "splay"]
 #![crate_type = "rlib"]
 #![license = "MIT"]
-#![feature(globs, phase, unsafe_destructor)]
-#![no_std]
+#![feature(unsafe_destructor)]
 
-#[phase(plugin, link)]
-extern crate core;
-extern crate alloc;
-extern crate collections;
-
-#[cfg(test)] #[phase(plugin, link)] extern crate std;
-#[cfg(test)] extern crate native;
-
-use core::prelude::*;
-
-use alloc::owned::Box;
-use core::mem;
-use core::kinds::marker;
-use collections::{Map, MutableMap, Mutable, Set, MutableSet};
+use std::mem;
+use std::kinds::marker;
+use std::collections::{Map, MutableMap, Mutable, Set, MutableSet};
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
@@ -461,8 +449,6 @@ impl<K, V> Drop for SplayMap<K, V> {
 
 #[cfg(test)]
 mod test {
-    use std::prelude::*;
-
     use super::{SplayMap, SplaySet};
 
     // Lots of these are shamelessly stolen from the TreeMap tests, it'd be
@@ -634,9 +620,4 @@ mod test {
             assert!(m.contains(i));
         }
     }
-}
-
-#[cfg(not(test))]
-mod std {
-    pub use core::{option, fmt, clone};
 }
