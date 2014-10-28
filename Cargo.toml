@@ -3,7 +3,7 @@
 name = "splay"
 version = "0.1.0"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
-license = "MIT/APL2"
+license = "MIT"
 readme = "README.md"
 keywords = ["collection"]
 repository = "https://github.com/alexcrichton/splay-rs"
