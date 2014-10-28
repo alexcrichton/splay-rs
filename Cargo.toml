@@ -3,3 +3,14 @@
 name = "splay"
 version = "0.1.0"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
+license = "MIT/APL2"
+readme = "README.md"
+keywords = ["collection"]
+repository = "https://github.com/alexcrichton/splay-rs"
+homepage = "https://github.com/alexcrichton/splay-rs"
+documentation = "http://alexcrichton.com/splay-rs"
+description = """
+A native implementation of a Splay Tree for Rust. Splay Trees are self-balancing
+binary search trees which adapt dynamically to lookups over time to allow common
+access patterns to frequently have better than log(n) lookup time.
+"""
