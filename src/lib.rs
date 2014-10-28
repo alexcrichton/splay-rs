@@ -17,9 +17,6 @@
 //! }
 //! ```
 
-#![crate_name = "splay"]
-#![crate_type = "rlib"]
-#![license = "MIT"]
 #![feature(unsafe_destructor)]
 
 use std::mem;
