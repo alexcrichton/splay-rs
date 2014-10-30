@@ -126,19 +126,19 @@ impl<K: Ord, V> SplayMap<K, V> {
         SplayMap{ root: None, size: 0, marker: marker::NoSync }
     }
 
-    /// Similar to `find`, but fails if the key is not present in the map
+    /// Similar to `find`, but panics if the key is not present in the map
     pub fn get(&self, k: &K) -> &V {
         match self.find(k) {
             Some(v) => v,
-            None => fail!("key not present in SplayMap"),
+            None => panic!("key not present in SplayMap"),
         }
     }
 
-    /// Similar to `find_mut`, but fails if the key is not present in the map
+    /// Similar to `find_mut`, but panics if the key is not present in the map
     pub fn get_mut(&mut self, k: &K) -> &mut V {
         match self.find_mut(k) {
             Some(v) => v,
-            None => fail!("key not present in SplayMap"),
+            None => panic!("key not present in SplayMap"),
         }
     }
 
@@ -304,9 +304,9 @@ impl<T: Ord> Set<T> for SplaySet<T> {
     /// Return true if the set contains a value
     fn contains(&self, t: &T) -> bool { self.map.contains_key(t) }
 
-    fn is_disjoint(&self, _: &SplaySet<T>) -> bool { fail!(); }
-    fn is_subset(&self, _: &SplaySet<T>) -> bool { fail!(); }
-    fn is_superset(&self, _: &SplaySet<T>) -> bool { fail!(); }
+    fn is_disjoint(&self, _: &SplaySet<T>) -> bool { panic!(); }
+    fn is_subset(&self, _: &SplaySet<T>) -> bool { panic!(); }
+    fn is_superset(&self, _: &SplaySet<T>) -> bool { panic!(); }
 }
 
 impl<T: Ord> MutableSet<T> for SplaySet<T> {
@@ -595,7 +595,7 @@ mod test {
     }
 
     #[test] #[should_fail]
-    fn get_failing_works() {
+    fn get_panic_works() {
         let mut m = SplayMap::new();
         m.insert(2i, 2i);
         m.get(&1);
