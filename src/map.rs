@@ -282,28 +282,26 @@ pub struct IntoIter<K, V> {
 
 impl<K, V> Iterator<(K, V)> for IntoIter<K, V> {
     fn next(&mut self) -> Option<(K, V)> {
-        match self.cur.take() {
-            None => None,
-            Some(cur) => {
-                let mut cur = cur;
-                loop {
-                    match cur.pop_left() {
-                        Some(node) => {
-                            let mut node = node;
-                            cur.left = node.pop_right();
-                            node.right = Some(cur);
-                            cur = node;
-                        }
+        let mut cur = match self.cur.take() {
+            Some(cur) => cur,
+            None => return None,
+        };
+        loop {
+            match cur.pop_left() {
+                Some(node) => {
+                    let mut node = node;
+                    cur.left = node.pop_right();
+                    node.right = Some(cur);
+                    cur = node;
+                }
 
-                        None => {
-                            self.cur = cur.pop_right();
-                            // left and right fields are both None
-                            let node = *cur;
-                            let Node { key, value, .. } = node;
-                            self.remaining -= 1;
-                            return Some((key, value));
-                        }
-                    }
+                None => {
+                    self.cur = cur.pop_right();
+                    // left and right fields are both None
+                    let node = *cur;
+                    let Node { key, value, .. } = node;
+                    self.remaining -= 1;
+                    return Some((key, value));
                 }
             }
         }
@@ -318,28 +316,26 @@ impl<K, V> DoubleEndedIterator<(K, V)> for IntoIter<K, V> {
     // Pretty much the same as the above code, but with left replaced with right
     // and vice-versa.
     fn next_back(&mut self) -> Option<(K, V)> {
-        match self.cur.take() {
-            None => None,
-            Some(cur) => {
-                let mut cur = cur;
-                loop {
-                    match cur.pop_right() {
-                        Some(node) => {
-                            let mut node = node;
-                            cur.right = node.pop_left();
-                            node.left = Some(cur);
-                            cur = node;
-                        }
+        let mut cur = match self.cur.take() {
+            Some(cur) => cur,
+            None => return None,
+        };
+        loop {
+            match cur.pop_right() {
+                Some(node) => {
+                    let mut node = node;
+                    cur.right = node.pop_left();
+                    node.left = Some(cur);
+                    cur = node;
+                }
 
-                        None => {
-                            self.cur = cur.pop_left();
-                            // left and right fields are both None
-                            let node = *cur;
-                            let Node { key, value, .. } = node;
-                            self.remaining -= 1;
-                            return Some((key, value));
-                        }
-                    }
+                None => {
+                    self.cur = cur.pop_left();
+                    // left and right fields are both None
+                    let node = *cur;
+                    let Node { key, value, .. } = node;
+                    self.remaining -= 1;
+                    return Some((key, value));
                 }
             }
         }
