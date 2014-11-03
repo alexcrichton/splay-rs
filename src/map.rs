@@ -1,5 +1,8 @@
-use std::mem;
+use std::default::Default;
 use std::kinds::marker;
+use std::mem;
+
+use node::Node;
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
@@ -11,12 +14,9 @@ pub struct SplayMap<K, V> {
     marker: marker::NoSync, // lookups mutate the tree
 }
 
-#[deriving(Clone)]
-struct Node<K, V> {
-    key: K,
-    value: V,
-    left: Option<Box<Node<K, V>>>,
-    right: Option<Box<Node<K, V>>>,
+pub struct IntoIter<K, V> {
+    cur: Option<Box<Node<K, V>>>,
+    remaining: uint,
 }
 
 /// Performs a top-down splay operation on a tree rooted at `node`. This will
@@ -99,22 +99,6 @@ impl<K: Ord, V> SplayMap<K, V> {
         SplayMap{ root: None, size: 0, marker: marker::NoSync }
     }
 
-    /// Similar to `find`, but panics if the key is not present in the map
-    pub fn get(&self, k: &K) -> &V {
-        match self.find(k) {
-            Some(v) => v,
-            None => panic!("key not present in SplayMap"),
-        }
-    }
-
-    /// Similar to `find_mut`, but panics if the key is not present in the map
-    pub fn get_mut(&mut self, k: &K) -> &mut V {
-        match self.find_mut(k) {
-            Some(v) => v,
-            None => panic!("key not present in SplayMap"),
-        }
-    }
-
     /// Moves all values out of this map, transferring ownership to the given
     /// iterator.
     pub fn into_iter(&mut self) -> IntoIter<K, V> {
@@ -127,8 +111,10 @@ impl<K: Ord, V> SplayMap<K, V> {
     /// Clears the tree in O(1) extra space (including the stack). This is
     /// necessary to prevent stack exhaustion with extremely large trees.
     pub fn clear(&mut self) {
-        let mut iter = IntoIter { cur: self.root.take(),
-                                      remaining: self.size };
+        let mut iter = IntoIter {
+            cur: self.root.take(),
+            remaining: self.size,
+        };
         for _ in iter {
             // ignore, drop the values (and the node)
         }
@@ -257,27 +243,42 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 }
 
-impl<K, V> Node<K, V> {
-    fn new(k: K, v: V,
-           l: Option<Box<Node<K, V>>>,
-           r: Option<Box<Node<K, V>>>) -> Box<Node<K, V>> {
-        box Node{ key: k, value: v, left: l, right: r }
-    }
-
-    #[inline(always)]
-    fn pop_left(&mut self) -> Option<Box<Node<K, V>>> {
-        mem::replace(&mut self.left, None)
-    }
-
-    #[inline(always)]
-    fn pop_right(&mut self) -> Option<Box<Node<K, V>>> {
-        mem::replace(&mut self.right, None)
+impl<K: Ord, V> Index<K, V> for SplayMap<K, V> {
+    fn index(&self, k: &K) -> &V {
+        match self.find(k) {
+            Some(v) => v,
+            None => panic!("key not present in SplayMap"),
+        }
     }
 }
 
-pub struct IntoIter<K, V> {
-    cur: Option<Box<Node<K, V>>>,
-    remaining: uint,
+impl<K: Ord, V> IndexMut<K, V> for SplayMap<K, V> {
+    fn index_mut(&mut self, k: &K) -> &mut V {
+        match self.find_mut(k) {
+            Some(v) => v,
+            None => panic!("key not present in SplayMap"),
+        }
+    }
+}
+
+impl<K: Ord, V> Default for SplayMap<K, V> {
+    fn default() -> SplayMap<K, V> { SplayMap::new() }
+}
+
+impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
+    fn from_iter<I: Iterator<(K, V)>>(iterator: I) -> SplayMap<K, V> {
+        let mut map = SplayMap::new();
+        map.extend(iterator);
+        map
+    }
+}
+
+impl<K: Ord, V> Extendable<(K, V)> for SplayMap<K, V> {
+    fn extend<I: Iterator<(K, V)>>(&mut self, mut i: I) {
+        for (k, v) in i {
+            self.insert(k, v);
+        }
+    }
 }
 
 impl<K, V> Iterator<(K, V)> for IntoIter<K, V> {

@@ -24,6 +24,7 @@ pub use map::SplayMap;
 
 pub mod set;
 pub mod map;
+mod node;
 
 #[cfg(test)]
 mod test {
@@ -144,7 +145,7 @@ mod test {
     fn get_works() {
         let mut m = SplayMap::new();
         m.insert(1i, 1i);
-        assert!(*m.get(&1) == 1);
+        assert!(m[1] == 1);
     }
 
     #[test]
@@ -179,7 +180,7 @@ mod test {
     fn get_panic_works() {
         let mut m = SplayMap::new();
         m.insert(2i, 2i);
-        m.get(&1);
+        m[1];
     }
 
     #[test]

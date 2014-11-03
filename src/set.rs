@@ -1,3 +1,5 @@
+use std::default::Default;
+
 use map::{mod, SplayMap};
 
 #[deriving(Clone)]
@@ -43,5 +45,23 @@ impl<T> Iterator<T> for IntoIter<T> {
 impl<T> DoubleEndedIterator<T> for IntoIter<T> {
     fn next_back(&mut self) -> Option<T> {
         self.inner.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<T: Ord> Default for SplaySet<T> {
+    fn default() -> SplaySet<T> { SplaySet::new() }
+}
+
+impl<T: Ord> FromIterator<T> for SplaySet<T> {
+    fn from_iter<I: Iterator<T>>(iterator: I) -> SplaySet<T> {
+        let mut set = SplaySet::new();
+        set.extend(iterator);
+        set
+    }
+}
+
+impl<T: Ord> Extendable<T> for SplaySet<T> {
+    fn extend<I: Iterator<T>>(&mut self, mut i: I) {
+        for t in i { self.insert(t); }
     }
 }
