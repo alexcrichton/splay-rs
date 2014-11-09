@@ -273,7 +273,7 @@ impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
     }
 }
 
-impl<K: Ord, V> Extendable<(K, V)> for SplayMap<K, V> {
+impl<K: Ord, V> Extend<(K, V)> for SplayMap<K, V> {
     fn extend<I: Iterator<(K, V)>>(&mut self, mut i: I) {
         for (k, v) in i {
             self.insert(k, v);
