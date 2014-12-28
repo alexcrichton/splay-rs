@@ -18,7 +18,7 @@
 //! ```
 
 #![feature(unsafe_destructor)]
-#![cfg_attr(not(test), deny(experimental, unstable))]
+//#![cfg_attr(not(test), deny(experimental, unstable))]
 
 pub use set::SplaySet;
 pub use map::SplayMap;

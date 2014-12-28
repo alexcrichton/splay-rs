@@ -38,7 +38,7 @@ impl<T: Ord> SplaySet<T> {
 }
 
 impl<T> Iterator<T> for IntoIter<T> {
-    fn next(&mut self) -> Option<T> { self.inner.next().map(|p| p.val0()) }
+    fn next(&mut self) -> Option<T> { self.inner.next().map(|p| p.0) }
     fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
 }
 
