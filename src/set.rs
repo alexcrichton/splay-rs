@@ -1,8 +1,9 @@
 use std::default::Default;
+use std::iter::FromIterator;
 
-use map::{mod, SplayMap};
+use map::{self, SplayMap};
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct SplaySet<T> {
     map: SplayMap<T, ()>
 }

@@ -1,13 +1,16 @@
 use std::default::Default;
+use std::cmp::Ordering::{Less, Greater, Equal};
+use std::iter::FromIterator;
 use std::kinds::marker;
 use std::mem;
+use std::ops::{Index, IndexMut};
 
 use node::Node;
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
 /// This version of splaying is a top-down splay operation.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct SplayMap<K, V> {
     root: Option<Box<Node<K, V>>>,
     size: uint,

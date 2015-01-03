@@ -1,6 +1,6 @@
 use std::mem;
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Node<K, V> {
     pub key: K,
     pub value: V,
