@@ -17,7 +17,7 @@
 //! }
 //! ```
 
-#![feature(unsafe_destructor)]
+#![feature(unsafe_destructor, associated_types)]
 //#![cfg_attr(not(test), deny(experimental, unstable))]
 
 pub use set::SplaySet;

@@ -246,7 +246,9 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 }
 
-impl<K: Ord, V> Index<K, V> for SplayMap<K, V> {
+impl<K: Ord, V> Index<K> for SplayMap<K, V> {
+    type Output = V;
+
     fn index(&self, k: &K) -> &V {
         match self.find(k) {
             Some(v) => v,
@@ -255,7 +257,9 @@ impl<K: Ord, V> Index<K, V> for SplayMap<K, V> {
     }
 }
 
-impl<K: Ord, V> IndexMut<K, V> for SplayMap<K, V> {
+impl<K: Ord, V> IndexMut<K> for SplayMap<K, V> {
+    type Output = V;
+
     fn index_mut(&mut self, k: &K) -> &mut V {
         match self.find_mut(k) {
             Some(v) => v,
@@ -269,7 +273,7 @@ impl<K: Ord, V> Default for SplayMap<K, V> {
 }
 
 impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
-    fn from_iter<I: Iterator<(K, V)>>(iterator: I) -> SplayMap<K, V> {
+    fn from_iter<I: Iterator<Item=(K, V)>>(iterator: I) -> SplayMap<K, V> {
         let mut map = SplayMap::new();
         map.extend(iterator);
         map
@@ -277,14 +281,15 @@ impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
 }
 
 impl<K: Ord, V> Extend<(K, V)> for SplayMap<K, V> {
-    fn extend<I: Iterator<(K, V)>>(&mut self, mut i: I) {
+    fn extend<I: Iterator<Item=(K, V)>>(&mut self, mut i: I) {
         for (k, v) in i {
             self.insert(k, v);
         }
     }
 }
 
-impl<K, V> Iterator<(K, V)> for IntoIter<K, V> {
+impl<K, V> Iterator for IntoIter<K, V> {
+    type Item = (K, V);
     fn next(&mut self) -> Option<(K, V)> {
         let mut cur = match self.cur.take() {
             Some(cur) => cur,
@@ -316,7 +321,7 @@ impl<K, V> Iterator<(K, V)> for IntoIter<K, V> {
     }
 }
 
-impl<K, V> DoubleEndedIterator<(K, V)> for IntoIter<K, V> {
+impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
     // Pretty much the same as the above code, but with left replaced with right
     // and vice-versa.
     fn next_back(&mut self) -> Option<(K, V)> {
