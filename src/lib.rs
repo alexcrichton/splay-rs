@@ -17,7 +17,7 @@
 //! }
 //! ```
 
-#![feature(unsafe_destructor, associated_types)]
+#![feature(unsafe_destructor)]
 //#![cfg_attr(not(test), deny(experimental, unstable))]
 
 pub use set::SplaySet;
@@ -37,7 +37,7 @@ mod test {
     #[test]
     fn insert_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1i, 2i));
+        assert!(t.insert(1, 2));
         assert!(!t.insert(1, 3));
         assert!(t.insert(2, 3));
     }
@@ -45,7 +45,7 @@ mod test {
     #[test]
     fn remove_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1i, 2i));
+        assert!(t.insert(1, 2));
         assert!(t.insert(2, 3));
         assert!(t.insert(3, 4));
         assert!(t.insert(0, 5));
@@ -55,7 +55,7 @@ mod test {
     #[test]
     fn pop_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1i, 2i));
+        assert!(t.insert(1, 2));
         assert!(t.insert(2, 3));
         assert!(t.insert(3, 4));
         assert!(t.insert(0, 5));
@@ -67,7 +67,7 @@ mod test {
     #[test]
     fn find_mut_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1i, 2i));
+        assert!(t.insert(1, 2));
         assert!(t.insert(2, 3));
         assert!(t.insert(3, 4));
         assert!(t.insert(0, 5));
@@ -88,7 +88,7 @@ mod test {
     #[test]
     fn test_len() {
         let mut m = SplayMap::new();
-        assert!(m.insert(3i, 6i));
+        assert!(m.insert(3, 6));
         assert!(m.len() == 1);
         assert!(m.insert(0, 0));
         assert!(m.len() == 2);
@@ -108,7 +108,7 @@ mod test {
     fn test_clear() {
         let mut m = SplayMap::new();
         m.clear();
-        assert!(m.insert(5i, 11i));
+        assert!(m.insert(5, 11));
         assert!(m.insert(12, -3));
         assert!(m.insert(19, 2));
         m.clear();
@@ -121,7 +121,7 @@ mod test {
     #[test]
     fn insert_replace() {
         let mut m = SplayMap::new();
-        assert!(m.insert(5i, 2i));
+        assert!(m.insert(5, 2));
         assert!(m.insert(2, 9));
         assert!(!m.insert(2, 11));
         assert!(m.find(&2).unwrap() == &11);
@@ -129,14 +129,14 @@ mod test {
 
     #[test]
     fn find_empty() {
-        let m: SplayMap<int, int> = SplayMap::new();
+        let m: SplayMap<i32, i32> = SplayMap::new();
         assert!(m.find(&5) == None);
     }
 
     #[test]
     fn find_not_found() {
         let mut m = SplayMap::new();
-        assert!(m.insert(1i, 2i));
+        assert!(m.insert(1, 2));
         assert!(m.insert(5, 3));
         assert!(m.insert(9, 3));
         assert!(m.find(&2) == None);
@@ -145,14 +145,14 @@ mod test {
     #[test]
     fn get_works() {
         let mut m = SplayMap::new();
-        m.insert(1i, 1i);
+        m.insert(1, 1);
         assert!(m[1] == 1);
     }
 
     #[test]
     fn into_iter() {
         let mut m = SplayMap::new();
-        m.insert(1i, 1i);
+        m.insert(1, 1);
         m.insert(2, 1);
         m.insert(0, 1);
         let mut cur = 0;
@@ -166,7 +166,7 @@ mod test {
     #[test]
     fn into_iter_backwards() {
         let mut m = SplayMap::new();
-        m.insert(1i, 1i);
+        m.insert(1, 1);
         m.insert(2, 1);
         m.insert(0, 1);
         let mut cur = 2;
@@ -180,7 +180,7 @@ mod test {
     #[test] #[should_fail]
     fn get_panic_works() {
         let mut m = SplayMap::new();
-        m.insert(2i, 2i);
+        m.insert(2, 2);
         m[1];
     }
 
@@ -190,8 +190,8 @@ mod test {
         let mut m = SplaySet::new();
         let mut v = Vec::new();
 
-        for _ in range(0i, 400) {
-            let i: int = random();
+        for _ in range(0, 400) {
+            let i: i32 = random();
             m.insert(i);
             v.push(i);
         }

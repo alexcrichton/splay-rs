@@ -12,7 +12,7 @@ impl<K, V> Node<K, V> {
     pub fn new(k: K, v: V,
                l: Option<Box<Node<K, V>>>,
                r: Option<Box<Node<K, V>>>) -> Box<Node<K, V>> {
-        box Node{ key: k, value: v, left: l, right: r }
+        Box::new(Node{ key: k, value: v, left: l, right: r })
     }
 
     #[inline(always)]

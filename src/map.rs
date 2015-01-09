@@ -1,7 +1,7 @@
 use std::default::Default;
 use std::cmp::Ordering::{Less, Greater, Equal};
 use std::iter::FromIterator;
-use std::kinds::marker;
+use std::marker;
 use std::mem;
 use std::ops::{Index, IndexMut};
 
@@ -13,13 +13,13 @@ use node::Node;
 #[derive(Clone)]
 pub struct SplayMap<K, V> {
     root: Option<Box<Node<K, V>>>,
-    size: uint,
+    size: usize,
     marker: marker::NoSync, // lookups mutate the tree
 }
 
 pub struct IntoIter<K, V> {
     cur: Option<Box<Node<K, V>>>,
-    remaining: uint,
+    remaining: usize,
 }
 
 /// Performs a top-down splay operation on a tree rooted at `node`. This will
@@ -108,7 +108,7 @@ impl<K: Ord, V> SplayMap<K, V> {
         IntoIter { cur: self.root.take(), remaining: self.size }
     }
 
-    pub fn len(&self) -> uint { self.size }
+    pub fn len(&self) -> usize { self.size }
     pub fn is_empty(&self) -> bool { self.len() == 0 }
 
     /// Clears the tree in O(1) extra space (including the stack). This is
@@ -227,8 +227,8 @@ impl<K: Ord, V> SplayMap<K, V> {
         }
 
         // TODO: Extra storage of None isn't necessary
-        let (value, left, right) = match self.root.take().unwrap() {
-            box Node {left, right, value, ..} => (value, left, right)
+        let (value, left, right) = match *self.root.take().unwrap() {
+            Node {left, right, value, ..} => (value, left, right)
         };
 
         match left {
@@ -316,7 +316,7 @@ impl<K, V> Iterator for IntoIter<K, V> {
         }
     }
 
-    fn size_hint(&self) -> (uint, Option<uint>) {
+    fn size_hint(&self) -> (usize, Option<usize>) {
         (self.remaining, Some(self.remaining))
     }
 }

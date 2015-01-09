@@ -22,7 +22,7 @@ impl<T: Ord> SplaySet<T> {
         IntoIter { inner: self.map.into_iter() }
     }
 
-    pub fn len(&self) -> uint { self.map.len() }
+    pub fn len(&self) -> usize { self.map.len() }
     pub fn is_empty(&self) -> bool { self.len() == 0 }
     pub fn clear(&mut self) { self.map.clear() }
 
@@ -41,7 +41,7 @@ impl<T: Ord> SplaySet<T> {
 impl<T> Iterator for IntoIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<T> { self.inner.next().map(|p| p.0) }
-    fn size_hint(&self) -> (uint, Option<uint>) { self.inner.size_hint() }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
 }
 
 impl<T> DoubleEndedIterator for IntoIter<T> {
