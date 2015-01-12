@@ -18,10 +18,11 @@
 //! ```
 
 #![feature(unsafe_destructor)]
-//#![cfg_attr(not(test), deny(experimental, unstable))]
+#![cfg_attr(test, allow(unstable))]
+#![cfg_attr(test, deny(warnings))]
 
-pub use set::SplaySet;
-pub use map::SplayMap;
+pub use self::set::SplaySet;
+pub use self::map::SplayMap;
 
 pub mod set;
 pub mod map;
@@ -37,116 +38,116 @@ mod test {
     #[test]
     fn insert_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1, 2));
-        assert!(!t.insert(1, 3));
-        assert!(t.insert(2, 3));
+        assert_eq!(t.insert(1, 2), None);
+        assert_eq!(t.insert(1, 3), Some(2));
+        assert_eq!(t.insert(2, 3), None);
     }
 
     #[test]
     fn remove_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1, 2));
-        assert!(t.insert(2, 3));
-        assert!(t.insert(3, 4));
-        assert!(t.insert(0, 5));
-        assert!(t.remove(&1));
+        assert_eq!(t.insert(1, 2), None);
+        assert_eq!(t.insert(2, 3), None);
+        assert_eq!(t.insert(3, 4), None);
+        assert_eq!(t.insert(0, 5), None);
+        assert_eq!(t.remove(&1), Some(2));
     }
 
     #[test]
     fn pop_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1, 2));
-        assert!(t.insert(2, 3));
-        assert!(t.insert(3, 4));
-        assert!(t.insert(0, 5));
-        assert_eq!(t.pop(&1), Some(2));
-        assert_eq!(t.pop(&1), None);
-        assert_eq!(t.pop(&0), Some(5));
+        assert_eq!(t.insert(1, 2), None);
+        assert_eq!(t.insert(2, 3), None);
+        assert_eq!(t.insert(3, 4), None);
+        assert_eq!(t.insert(0, 5), None);
+        assert_eq!(t.remove(&1), Some(2));
+        assert_eq!(t.remove(&1), None);
+        assert_eq!(t.remove(&0), Some(5));
     }
 
     #[test]
     fn find_mut_simple() {
         let mut t = SplayMap::new();
-        assert!(t.insert(1, 2));
-        assert!(t.insert(2, 3));
-        assert!(t.insert(3, 4));
-        assert!(t.insert(0, 5));
+        assert_eq!(t.insert(1, 2), None);
+        assert_eq!(t.insert(2, 3), None);
+        assert_eq!(t.insert(3, 4), None);
+        assert_eq!(t.insert(0, 5), None);
 
         {
-            let ptr = t.find_mut(&1);
+            let ptr = t.get_mut(&1);
             assert!(ptr.is_some());
             let ptr = ptr.unwrap();
-            assert!(*ptr == 2);
+            assert_eq!(*ptr, 2);
             *ptr = 4;
         }
 
-        let ptr = t.find_mut(&1);
+        let ptr = t.get_mut(&1);
         assert!(ptr.is_some());
-        assert!(*ptr.unwrap() == 4);
+        assert_eq!(*ptr.unwrap(), 4);
     }
 
     #[test]
     fn test_len() {
         let mut m = SplayMap::new();
-        assert!(m.insert(3, 6));
-        assert!(m.len() == 1);
-        assert!(m.insert(0, 0));
-        assert!(m.len() == 2);
-        assert!(m.insert(4, 8));
-        assert!(m.len() == 3);
-        assert!(m.remove(&3));
-        assert!(m.len() == 2);
-        assert!(!m.remove(&5));
-        assert!(m.len() == 2);
-        assert!(m.insert(2, 4));
-        assert!(m.len() == 3);
-        assert!(m.insert(1, 2));
-        assert!(m.len() == 4);
+        assert_eq!(m.insert(3, 6), None);
+        assert_eq!(m.len(), 1);
+        assert_eq!(m.insert(0, 0), None);
+        assert_eq!(m.len(), 2);
+        assert_eq!(m.insert(4, 8), None);
+        assert_eq!(m.len(), 3);
+        assert_eq!(m.remove(&3), Some(6));
+        assert_eq!(m.len(), 2);
+        assert_eq!(m.remove(&5), None);
+        assert_eq!(m.len(), 2);
+        assert_eq!(m.insert(2, 4), None);
+        assert_eq!(m.len(), 3);
+        assert_eq!(m.insert(1, 2), None);
+        assert_eq!(m.len(), 4);
     }
 
     #[test]
     fn test_clear() {
         let mut m = SplayMap::new();
         m.clear();
-        assert!(m.insert(5, 11));
-        assert!(m.insert(12, -3));
-        assert!(m.insert(19, 2));
+        assert_eq!(m.insert(5, 11), None);
+        assert_eq!(m.insert(12, -3), None);
+        assert_eq!(m.insert(19, 2), None);
         m.clear();
-        assert!(m.find(&5).is_none());
-        assert!(m.find(&12).is_none());
-        assert!(m.find(&19).is_none());
+        assert_eq!(m.get(&5), None);
+        assert_eq!(m.get(&12), None);
+        assert_eq!(m.get(&19), None);
         assert!(m.is_empty());
     }
 
     #[test]
     fn insert_replace() {
         let mut m = SplayMap::new();
-        assert!(m.insert(5, 2));
-        assert!(m.insert(2, 9));
-        assert!(!m.insert(2, 11));
-        assert!(m.find(&2).unwrap() == &11);
+        assert_eq!(m.insert(5, 2), None);
+        assert_eq!(m.insert(2, 9), None);
+        assert_eq!(m.insert(2, 11), Some(9));
+        assert_eq!(m[2], 11);
     }
 
     #[test]
     fn find_empty() {
         let m: SplayMap<i32, i32> = SplayMap::new();
-        assert!(m.find(&5) == None);
+        assert_eq!(m.get(&5), None);
     }
 
     #[test]
     fn find_not_found() {
         let mut m = SplayMap::new();
-        assert!(m.insert(1, 2));
-        assert!(m.insert(5, 3));
-        assert!(m.insert(9, 3));
-        assert!(m.find(&2) == None);
+        assert_eq!(m.insert(1, 2), None);
+        assert_eq!(m.insert(5, 3), None);
+        assert_eq!(m.insert(9, 3), None);
+        assert_eq!(m.get(&2), None);
     }
 
     #[test]
     fn get_works() {
         let mut m = SplayMap::new();
         m.insert(1, 1);
-        assert!(m[1] == 1);
+        assert_eq!(m[1], 1);
     }
 
     #[test]
