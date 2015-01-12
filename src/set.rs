@@ -18,7 +18,7 @@ impl<T: Ord> SplaySet<T> {
 
     /// Moves all values out of this set, transferring ownership to the given
     /// iterator.
-    pub fn into_iter(&mut self) -> IntoIter<T> {
+    pub fn into_iter(self) -> IntoIter<T> {
         IntoIter { inner: self.map.into_iter() }
     }
 
@@ -31,11 +31,11 @@ impl<T: Ord> SplaySet<T> {
 
     /// Add a value to the set. Return true if the value was not already
     /// present in the set.
-    pub fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()) }
+    pub fn insert(&mut self, t: T) -> bool { self.map.insert(t, ()).is_none() }
 
     /// Remove a value from the set. Return true if the value was
     /// present in the set.
-    pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t) }
+    pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t).is_some() }
 }
 
 impl<T> Iterator for IntoIter<T> {

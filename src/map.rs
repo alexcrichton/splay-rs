@@ -1,20 +1,19 @@
+use std::borrow::BorrowFrom;
+use std::cell::UnsafeCell;
+use std::cmp::Ordering::{Less, Equal, Greater};
 use std::default::Default;
-use std::cmp::Ordering::{Less, Greater, Equal};
 use std::iter::FromIterator;
-use std::marker;
 use std::mem;
 use std::ops::{Index, IndexMut};
 
-use node::Node;
+use super::node::Node;
 
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
 /// This version of splaying is a top-down splay operation.
-#[derive(Clone)]
 pub struct SplayMap<K, V> {
-    root: Option<Box<Node<K, V>>>,
+    root: UnsafeCell<Option<Box<Node<K, V>>>>,
     size: usize,
-    marker: marker::NoSync, // lookups mutate the tree
 }
 
 pub struct IntoIter<K, V> {
@@ -26,7 +25,9 @@ pub struct IntoIter<K, V> {
 /// modify the pointer to contain the new root of the tree once the splay
 /// operation is done. When finished, if `key` is in the tree, it will be at the
 /// root. Otherwise the closest key to the specified key will be at the root.
-fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
+fn splay<K, V, Q: ?Sized>(key: &Q, node: &mut Box<Node<K, V>>)
+    where K: Ord, Q: Ord + BorrowFrom<K>
+{
     let mut newleft = None;
     let mut newright = None;
 
@@ -38,7 +39,7 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
         let mut r = &mut newleft;
 
         loop {
-            match key.cmp(&node.key) {
+            match key.cmp(BorrowFrom::borrow_from(&node.key)) {
                 // Found it, yay!
                 Equal => { break }
 
@@ -47,7 +48,7 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
                         Some(left) => left, None => break
                     };
                     // rotate this node right if necessary
-                    if key.cmp(&left.key) == Less {
+                    if key.cmp(BorrowFrom::borrow_from(&left.key)) == Less {
                         // A bit odd, but avoids drop glue
                         mem::swap(&mut node.left, &mut left.right);
                         mem::swap(&mut left, node);
@@ -70,7 +71,7 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
                         None => { break }
                         // rotate left if necessary
                         Some(mut right) => {
-                            if key.cmp(&right.key) == Greater {
+                            if key.cmp(BorrowFrom::borrow_from(&right.key)) == Greater {
                                 mem::swap(&mut node.right, &mut right.left);
                                 mem::swap(&mut right, node);
                                 let none = mem::replace(&mut node.left,
@@ -99,13 +100,13 @@ fn splay<K: Ord, V>(key: &K, node: &mut Box<Node<K, V>>) {
 
 impl<K: Ord, V> SplayMap<K, V> {
     pub fn new() -> SplayMap<K, V> {
-        SplayMap{ root: None, size: 0, marker: marker::NoSync }
+        SplayMap { root: UnsafeCell::new(None), size: 0 }
     }
 
     /// Moves all values out of this map, transferring ownership to the given
     /// iterator.
-    pub fn into_iter(&mut self) -> IntoIter<K, V> {
-        IntoIter { cur: self.root.take(), remaining: self.size }
+    pub fn into_iter(mut self) -> IntoIter<K, V> {
+        IntoIter { cur: self.root_mut().take(), remaining: self.size }
     }
 
     pub fn len(&self) -> usize { self.size }
@@ -115,7 +116,7 @@ impl<K: Ord, V> SplayMap<K, V> {
     /// necessary to prevent stack exhaustion with extremely large trees.
     pub fn clear(&mut self) {
         let mut iter = IntoIter {
-            cur: self.root.take(),
+            cur: self.root_mut().take(),
             remaining: self.size,
         };
         for _ in iter {
@@ -125,12 +126,16 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 
     /// Return true if the map contains a value for the specified key
-    pub fn contains_key(&self, key: &K) -> bool {
-        self.find(key).is_some()
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        where Q: Ord + BorrowFrom<K>
+    {
+        self.get(key).is_some()
     }
 
     /// Return a reference to the value corresponding to the key
-    pub fn find(&self, key: &K) -> Option<&V> {
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+        where Q: Ord + BorrowFrom<K>
+    {
         // Splay trees are self-modifying, so they can't exactly operate with
         // the immutable self given by the Map interface for this method. It can
         // be guaranteed, however, that the callers of this method are not
@@ -150,18 +155,28 @@ impl<K: Ord, V> SplayMap<K, V> {
         // exposed on this splay tree implementation, and more thought would be
         // required if there were.
         unsafe {
-            let this = mem::transmute::<&_, &mut SplayMap<K, V>>(self);
-            this.find_mut(key).map(|x| &*x)
+            match *self.root.get() {
+                Some(ref mut root) => {
+                    splay(key, root);
+                    if key == BorrowFrom::borrow_from(&root.key) {
+                        return Some(&root.value);
+                    }
+                    None
+                }
+                None => None,
+            }
         }
     }
 
     /// Return a mutable reference to the value corresponding to the key
-    pub fn find_mut(&mut self, key: &K) -> Option<&mut V> {
-        match self.root {
+    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+        where Q: Ord + BorrowFrom<K>
+    {
+        match *self.root_mut() {
             None => { return None; }
             Some(ref mut root) => {
                 splay(key, root);
-                if *key == root.key {
+                if key == BorrowFrom::borrow_from(&root.key) {
                     return Some(&mut root.value);
                 }
                 return None;
@@ -169,19 +184,11 @@ impl<K: Ord, V> SplayMap<K, V> {
         }
     }
 
-    /// Insert a key-value pair into the map. An existing value for a
-    /// key is replaced by the new value. Return true if the key did
-    /// not already exist in the map.
-    pub fn insert(&mut self, key: K, value: V) -> bool {
-        self.swap(key, value).is_none()
-    }
-
     /// Insert a key-value pair from the map. If the key already had a value
     /// present in the map, that value is returned. Otherwise None is returned.
-    pub fn swap(&mut self, key: K, value: V) -> Option<V> {
-        match self.root {
-            None => self.root = Some(Node::new(key, value, None, None)),
-            Some(ref mut root) => {
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        match self.root_mut() {
+            &mut Some(ref mut root) => {
                 splay(&key, root);
 
                 match key.cmp(&root.key) {
@@ -204,67 +211,72 @@ impl<K: Ord, V> SplayMap<K, V> {
                     }
                 }
             }
+            slot => {
+                *slot = Some(Node::new(key, value, None, None));
+            }
         }
         self.size += 1;
         return None;
     }
 
-    /// Remove a key-value pair from the map. Return true if the key
-    /// was present in the map, otherwise false.
-    pub fn remove(&mut self, key: &K) -> bool {
-        self.pop(key).is_some()
-    }
-
     /// Removes a key from the map, returning the value at the key if the key
     /// was previously in the map.
-    pub fn pop(&mut self, key: &K) -> Option<V> {
-        match self.root {
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+        where Q: BorrowFrom<K> + Ord
+    {
+        match *self.root_mut() {
             None => { return None; }
             Some(ref mut root) => {
                 splay(key, root);
-                if *key != root.key { return None }
+                if key != BorrowFrom::borrow_from(&root.key) { return None }
             }
         }
 
         // TODO: Extra storage of None isn't necessary
-        let (value, left, right) = match *self.root.take().unwrap() {
+        let (value, left, right) = match *self.root_mut().take().unwrap() {
             Node {left, right, value, ..} => (value, left, right)
         };
 
-        match left {
-            None => self.root = right,
-            Some(node) => {
-                let mut node = node;
+        *self.root_mut() = match left {
+            None => right,
+            Some(mut node) => {
                 splay(key, &mut node);
                 node.right = right;
-                self.root = Some(node);
+                Some(node)
             }
-        }
+        };
 
         self.size -= 1;
         return Some(value);
     }
 }
 
-impl<K: Ord, V> Index<K> for SplayMap<K, V> {
-    type Output = V;
-
-    fn index(&self, k: &K) -> &V {
-        match self.find(k) {
-            Some(v) => v,
-            None => panic!("key not present in SplayMap"),
-        }
+impl<K, V> SplayMap<K, V> {
+    // These two functions provide safe access to the root node, and they should
+    // be valid to call in virtually all contexts.
+    fn root_mut(&mut self) -> &mut Option<Box<Node<K, V>>> {
+        unsafe { &mut *self.root.get() }
+    }
+    fn root_ref(&self) -> &Option<Box<Node<K, V>>> {
+        unsafe { &*self.root.get() }
     }
 }
 
-impl<K: Ord, V> IndexMut<K> for SplayMap<K, V> {
+impl<K: Ord, V, Q: ?Sized> Index<Q> for SplayMap<K, V>
+    where Q: BorrowFrom<K> + Ord
+{
     type Output = V;
+    fn index(&self, index: &Q) -> &V {
+        self.get(index).expect("key not present in SplayMap")
+    }
+}
 
-    fn index_mut(&mut self, k: &K) -> &mut V {
-        match self.find_mut(k) {
-            Some(v) => v,
-            None => panic!("key not present in SplayMap"),
-        }
+impl<K: Ord, V, Q: ?Sized> IndexMut<Q> for SplayMap<K, V>
+    where Q: BorrowFrom<K> + Ord
+{
+    type Output = V;
+    fn index_mut(&mut self, index: &Q) -> &mut V {
+        self.get_mut(index).expect("key not present in SplayMap")
     }
 }
 
@@ -347,6 +359,17 @@ impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
                     return Some((key, value));
                 }
             }
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for IntoIter<K, V> {}
+
+impl<K: Clone, V: Clone> Clone for SplayMap<K, V> {
+    fn clone(&self) -> SplayMap<K, V> {
+        SplayMap {
+            root: UnsafeCell::new(self.root_ref().clone()),
+            size: self.size,
         }
     }
 }
