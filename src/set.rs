@@ -63,7 +63,7 @@ impl<T: Ord> FromIterator<T> for SplaySet<T> {
 }
 
 impl<T: Ord> Extend<T> for SplaySet<T> {
-    fn extend<I: Iterator<Item=T>>(&mut self, mut i: I) {
+    fn extend<I: Iterator<Item=T>>(&mut self, i: I) {
         for t in i { self.insert(t); }
     }
 }

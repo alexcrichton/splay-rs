@@ -17,9 +17,9 @@
 //! }
 //! ```
 
-#![feature(unsafe_destructor)]
-#![cfg_attr(test, allow(unstable))]
+#![feature(unsafe_destructor, core)]
 #![cfg_attr(test, deny(warnings))]
+#![cfg_attr(test, feature(rand))]
 
 pub use self::set::SplaySet;
 pub use self::map::SplayMap;

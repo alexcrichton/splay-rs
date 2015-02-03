@@ -115,7 +115,7 @@ impl<K: Ord, V> SplayMap<K, V> {
     /// Clears the tree in O(1) extra space (including the stack). This is
     /// necessary to prevent stack exhaustion with extremely large trees.
     pub fn clear(&mut self) {
-        let mut iter = IntoIter {
+        let iter = IntoIter {
             cur: self.root_mut().take(),
             remaining: self.size,
         };
@@ -293,7 +293,7 @@ impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
 }
 
 impl<K: Ord, V> Extend<(K, V)> for SplayMap<K, V> {
-    fn extend<I: Iterator<Item=(K, V)>>(&mut self, mut i: I) {
+    fn extend<I: Iterator<Item=(K, V)>>(&mut self, i: I) {
         for (k, v) in i {
             self.insert(k, v);
         }
