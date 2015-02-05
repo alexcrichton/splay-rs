@@ -19,7 +19,8 @@
 
 #![feature(unsafe_destructor, core)]
 #![cfg_attr(test, deny(warnings))]
-#![cfg_attr(test, feature(rand))]
+
+#[cfg(test)] extern crate rand;
 
 pub use self::set::SplaySet;
 pub use self::map::SplayMap;
@@ -187,7 +188,7 @@ mod test {
 
     #[test]
     fn large() {
-        use std::rand::random;
+        use rand::random;
         let mut m = SplaySet::new();
         let mut v = Vec::new();
 

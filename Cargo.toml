@@ -14,3 +14,6 @@ A native implementation of a Splay Tree for Rust. Splay Trees are self-balancing
 binary search trees which adapt dynamically to lookups over time to allow common
 access patterns to frequently have better than log(n) lookup time.
 """
+
+[dev-dependencies]
+rand = "0.1"
