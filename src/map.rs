@@ -274,7 +274,6 @@ impl<K: Ord, V, Q: ?Sized> Index<Q> for SplayMap<K, V>
 impl<K: Ord, V, Q: ?Sized> IndexMut<Q> for SplayMap<K, V>
     where Q: BorrowFrom<K> + Ord
 {
-    type Output = V;
     fn index_mut(&mut self, index: &Q) -> &mut V {
         self.get_mut(index).expect("key not present in SplayMap")
     }
