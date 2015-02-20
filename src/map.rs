@@ -1,8 +1,8 @@
-use std::borrow::BorrowFrom;
+use std::borrow::Borrow;
 use std::cell::UnsafeCell;
 use std::cmp::Ordering::{Less, Equal, Greater};
 use std::default::Default;
-use std::iter::FromIterator;
+use std::iter::{FromIterator, IntoIterator};
 use std::mem;
 use std::ops::{Index, IndexMut};
 
@@ -26,7 +26,7 @@ pub struct IntoIter<K, V> {
 /// operation is done. When finished, if `key` is in the tree, it will be at the
 /// root. Otherwise the closest key to the specified key will be at the root.
 fn splay<K, V, Q: ?Sized>(key: &Q, node: &mut Box<Node<K, V>>)
-    where K: Ord, Q: Ord + BorrowFrom<K>
+    where K: Ord + Borrow<Q>, Q: Ord
 {
     let mut newleft = None;
     let mut newright = None;
@@ -39,7 +39,7 @@ fn splay<K, V, Q: ?Sized>(key: &Q, node: &mut Box<Node<K, V>>)
         let mut r = &mut newleft;
 
         loop {
-            match key.cmp(BorrowFrom::borrow_from(&node.key)) {
+            match key.cmp(node.key.borrow()) {
                 // Found it, yay!
                 Equal => { break }
 
@@ -48,7 +48,7 @@ fn splay<K, V, Q: ?Sized>(key: &Q, node: &mut Box<Node<K, V>>)
                         Some(left) => left, None => break
                     };
                     // rotate this node right if necessary
-                    if key.cmp(BorrowFrom::borrow_from(&left.key)) == Less {
+                    if key.cmp(left.key.borrow()) == Less {
                         // A bit odd, but avoids drop glue
                         mem::swap(&mut node.left, &mut left.right);
                         mem::swap(&mut left, node);
@@ -71,7 +71,7 @@ fn splay<K, V, Q: ?Sized>(key: &Q, node: &mut Box<Node<K, V>>)
                         None => { break }
                         // rotate left if necessary
                         Some(mut right) => {
-                            if key.cmp(BorrowFrom::borrow_from(&right.key)) == Greater {
+                            if key.cmp(right.key.borrow()) == Greater {
                                 mem::swap(&mut node.right, &mut right.left);
                                 mem::swap(&mut right, node);
                                 let none = mem::replace(&mut node.left,
@@ -127,14 +127,14 @@ impl<K: Ord, V> SplayMap<K, V> {
 
     /// Return true if the map contains a value for the specified key
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
-        where Q: Ord + BorrowFrom<K>
+        where K: Borrow<Q>, Q: Ord,
     {
         self.get(key).is_some()
     }
 
     /// Return a reference to the value corresponding to the key
     pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
-        where Q: Ord + BorrowFrom<K>
+        where K: Borrow<Q>, Q: Ord,
     {
         // Splay trees are self-modifying, so they can't exactly operate with
         // the immutable self given by the Map interface for this method. It can
@@ -158,7 +158,7 @@ impl<K: Ord, V> SplayMap<K, V> {
             match *self.root.get() {
                 Some(ref mut root) => {
                     splay(key, root);
-                    if key == BorrowFrom::borrow_from(&root.key) {
+                    if key == root.key.borrow() {
                         return Some(&root.value);
                     }
                     None
@@ -170,13 +170,13 @@ impl<K: Ord, V> SplayMap<K, V> {
 
     /// Return a mutable reference to the value corresponding to the key
     pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
-        where Q: Ord + BorrowFrom<K>
+        where K: Borrow<Q>, Q: Ord,
     {
         match *self.root_mut() {
             None => { return None; }
             Some(ref mut root) => {
                 splay(key, root);
-                if key == BorrowFrom::borrow_from(&root.key) {
+                if key == root.key.borrow() {
                     return Some(&mut root.value);
                 }
                 return None;
@@ -222,13 +222,13 @@ impl<K: Ord, V> SplayMap<K, V> {
     /// Removes a key from the map, returning the value at the key if the key
     /// was previously in the map.
     pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
-        where Q: BorrowFrom<K> + Ord
+        where K: Borrow<Q>, Q: Ord
     {
         match *self.root_mut() {
             None => { return None; }
             Some(ref mut root) => {
                 splay(key, root);
-                if key != BorrowFrom::borrow_from(&root.key) { return None }
+                if key != root.key.borrow() { return None }
             }
         }
 
@@ -263,7 +263,7 @@ impl<K, V> SplayMap<K, V> {
 }
 
 impl<K: Ord, V, Q: ?Sized> Index<Q> for SplayMap<K, V>
-    where Q: BorrowFrom<K> + Ord
+    where K: Borrow<Q>, Q: Ord
 {
     type Output = V;
     fn index(&self, index: &Q) -> &V {
@@ -272,7 +272,7 @@ impl<K: Ord, V, Q: ?Sized> Index<Q> for SplayMap<K, V>
 }
 
 impl<K: Ord, V, Q: ?Sized> IndexMut<Q> for SplayMap<K, V>
-    where Q: BorrowFrom<K> + Ord
+    where K: Borrow<Q>, Q: Ord
 {
     fn index_mut(&mut self, index: &Q) -> &mut V {
         self.get_mut(index).expect("key not present in SplayMap")
@@ -284,7 +284,7 @@ impl<K: Ord, V> Default for SplayMap<K, V> {
 }
 
 impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
-    fn from_iter<I: Iterator<Item=(K, V)>>(iterator: I) -> SplayMap<K, V> {
+    fn from_iter<I: IntoIterator<Item=(K, V)>>(iterator: I) -> SplayMap<K, V> {
         let mut map = SplayMap::new();
         map.extend(iterator);
         map
@@ -292,7 +292,7 @@ impl<K: Ord, V> FromIterator<(K, V)> for SplayMap<K, V> {
 }
 
 impl<K: Ord, V> Extend<(K, V)> for SplayMap<K, V> {
-    fn extend<I: Iterator<Item=(K, V)>>(&mut self, i: I) {
+    fn extend<I: IntoIterator<Item=(K, V)>>(&mut self, i: I) {
         for (k, v) in i {
             self.insert(k, v);
         }

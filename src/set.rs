@@ -1,5 +1,5 @@
 use std::default::Default;
-use std::iter::FromIterator;
+use std::iter::{FromIterator, IntoIterator};
 
 use map::{self, SplayMap};
 
@@ -55,7 +55,7 @@ impl<T: Ord> Default for SplaySet<T> {
 }
 
 impl<T: Ord> FromIterator<T> for SplaySet<T> {
-    fn from_iter<I: Iterator<Item=T>>(iterator: I) -> SplaySet<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(iterator: I) -> SplaySet<T> {
         let mut set = SplaySet::new();
         set.extend(iterator);
         set
@@ -63,7 +63,7 @@ impl<T: Ord> FromIterator<T> for SplaySet<T> {
 }
 
 impl<T: Ord> Extend<T> for SplaySet<T> {
-    fn extend<I: Iterator<Item=T>>(&mut self, i: I) {
+    fn extend<I: IntoIterator<Item=T>>(&mut self, i: I) {
         for t in i { self.insert(t); }
     }
 }
