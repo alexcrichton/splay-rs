@@ -17,6 +17,7 @@
 //! }
 //! ```
 
+#![doc(html_root_url = "http://alexcrichton.com/splay-rs")]
 #![feature(unsafe_destructor, core)]
 #![cfg_attr(test, deny(warnings))]
 
