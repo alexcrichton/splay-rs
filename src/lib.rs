@@ -18,7 +18,7 @@
 //! ```
 
 #![doc(html_root_url = "http://alexcrichton.com/splay-rs")]
-#![feature(unsafe_destructor, core)]
+#![feature(unsafe_destructor)]
 #![cfg_attr(test, deny(warnings))]
 
 #[cfg(test)] extern crate rand;
@@ -180,7 +180,7 @@ mod test {
         }
     }
 
-    #[test] #[should_fail]
+    #[test] #[should_panic]
     fn get_panic_works() {
         let mut m = SplayMap::new();
         m.insert(2, 2);
@@ -193,7 +193,7 @@ mod test {
         let mut m = SplaySet::new();
         let mut v = Vec::new();
 
-        for _ in range(0, 400) {
+        for _ in 0..400 {
             let i: i32 = random();
             m.insert(i);
             v.push(i);
