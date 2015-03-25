@@ -127,7 +127,7 @@ mod test {
         assert_eq!(m.insert(5, 2), None);
         assert_eq!(m.insert(2, 9), None);
         assert_eq!(m.insert(2, 11), Some(9));
-        assert_eq!(m[2], 11);
+        assert_eq!(m[&2], 11);
     }
 
     #[test]
@@ -149,7 +149,7 @@ mod test {
     fn get_works() {
         let mut m = SplayMap::new();
         m.insert(1, 1);
-        assert_eq!(m[1], 1);
+        assert_eq!(m[&1], 1);
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod test {
     fn get_panic_works() {
         let mut m = SplayMap::new();
         m.insert(2, 2);
-        m[1];
+        m[&1];
     }
 
     #[test]

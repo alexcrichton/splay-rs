@@ -262,19 +262,19 @@ impl<K, V> SplayMap<K, V> {
     }
 }
 
-impl<K: Ord, V, Q: ?Sized> Index<Q> for SplayMap<K, V>
+impl<'a, K: Ord, V, Q: ?Sized> Index<&'a Q> for SplayMap<K, V>
     where K: Borrow<Q>, Q: Ord
 {
     type Output = V;
-    fn index(&self, index: &Q) -> &V {
+    fn index(&self, index: &'a Q) -> &V {
         self.get(index).expect("key not present in SplayMap")
     }
 }
 
-impl<K: Ord, V, Q: ?Sized> IndexMut<Q> for SplayMap<K, V>
+impl<'a, K: Ord, V, Q: ?Sized> IndexMut<&'a Q> for SplayMap<K, V>
     where K: Borrow<Q>, Q: Ord
 {
-    fn index_mut(&mut self, index: &Q) -> &mut V {
+    fn index_mut(&mut self, index: &'a Q) -> &mut V {
         self.get_mut(index).expect("key not present in SplayMap")
     }
 }
