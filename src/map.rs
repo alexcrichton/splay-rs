@@ -11,7 +11,7 @@ use super::node::Node;
 /// The implementation of this splay tree is largely based on the c code at:
 ///     ftp://ftp.cs.cmu.edu/usr/ftp/usr/sleator/splaying/top-down-splay.c
 /// This version of splaying is a top-down splay operation.
-pub struct SplayMap<K, V> {
+pub struct SplayMap<K: Ord, V> {
     root: UnsafeCell<Option<Box<Node<K, V>>>>,
     size: usize,
 }
@@ -251,7 +251,7 @@ impl<K: Ord, V> SplayMap<K, V> {
     }
 }
 
-impl<K, V> SplayMap<K, V> {
+impl<K: Ord, V> SplayMap<K, V> {
     // These two functions provide safe access to the root node, and they should
     // be valid to call in virtually all contexts.
     fn root_mut(&mut self) -> &mut Option<Box<Node<K, V>>> {
@@ -364,7 +364,7 @@ impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
 
 impl<K, V> ExactSizeIterator for IntoIter<K, V> {}
 
-impl<K: Clone, V: Clone> Clone for SplayMap<K, V> {
+impl<K: Clone + Ord, V: Clone> Clone for SplayMap<K, V> {
     fn clone(&self) -> SplayMap<K, V> {
         SplayMap {
             root: UnsafeCell::new(self.root_ref().clone()),

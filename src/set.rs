@@ -4,7 +4,7 @@ use std::iter::{FromIterator, IntoIterator};
 use map::{self, SplayMap};
 
 #[derive(Clone)]
-pub struct SplaySet<T> {
+pub struct SplaySet<T: Ord> {
     map: SplayMap<T, ()>
 }
 
