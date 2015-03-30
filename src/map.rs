@@ -373,7 +373,6 @@ impl<K: Clone + Ord, V: Clone> Clone for SplayMap<K, V> {
     }
 }
 
-#[unsafe_destructor]
 impl<K: Ord, V> Drop for SplayMap<K, V> {
     fn drop(&mut self) {
         // Be sure to not recurse too deep on destruction

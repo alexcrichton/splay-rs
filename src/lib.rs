@@ -18,7 +18,6 @@
 //! ```
 
 #![doc(html_root_url = "http://alexcrichton.com/splay-rs")]
-#![feature(unsafe_destructor)]
 #![cfg_attr(test, deny(warnings))]
 
 #[cfg(test)] extern crate rand;
