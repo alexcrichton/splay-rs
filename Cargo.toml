@@ -16,4 +16,4 @@ access patterns to frequently have better than log(n) lookup time.
 """
 
 [dev-dependencies]
-rand = "0.2"
+rand = "0.3"
