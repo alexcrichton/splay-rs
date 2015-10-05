@@ -11,8 +11,8 @@ This repo is provided as a Cargo package, simply adjust your `Cargo.toml` to
 include
 
 ```toml
-[dependencies.splay]
-git = "https://github.com/alexcrichton/splay-rs"
+[dependencies]
+splay = "0.1"
 ```
 
 This code is all released under the MIT license. The implementation of splaying
