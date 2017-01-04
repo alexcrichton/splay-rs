@@ -202,4 +202,63 @@ mod test {
             assert!(m.contains(i));
         }
     }
+
+    #[test]
+    fn remove_range() {
+        let mut m = SplaySet::new();
+        let mut v = Vec::new();
+
+        for i in 0..400 {
+            m.insert(i);
+            v.push(i);
+        }
+
+        let mut output = vec![];
+
+        let m = &mut m;
+        let output = &mut output;
+
+        check_remove_range(m, 42, 142, output, 42, 142);
+
+        check_remove_range(m, 42, 42, output, 42, 42);
+
+        check_remove_range(m, 142, 142, output, 142, 142);
+
+        check_remove_range(m, 42, 142, output, 142, 142);
+
+        check_remove_range(m, 41, 42, output, 41, 42);
+
+        check_remove_range(m, 40, 142, output, 40, 41);
+
+        check_remove_range2(m, 39, 143, output, vec![39, 142]);
+
+        check_remove_range2(m, 1, 399, output, (1..39).chain(143..399).collect());
+
+        check_remove_range(m, 0, 10, output, 0, 1);
+
+        check_remove_range(m, 0, 399, output, 0, 0);
+
+        check_remove_range(m, 400, 1000, output, 0, 0);
+
+        check_remove_range(m, 399, 400, output, 399, 400);
+
+        assert!(m.is_empty(), "size={}", m.len());
+    }
+
+
+    fn check_remove_range(m: &mut SplaySet<usize>, from: usize, to: usize, output: &mut Vec<usize>, expect_from: usize, expect_to: usize) {
+        output.clear();
+        m.remove_range(&from, &to, output);
+        assert!(output.len() == expect_to-expect_from, "len={}, output={:?}", output.len(), output);
+        output.sort();
+        assert_eq!(output, &mut (expect_from..expect_to).collect::<Vec<_>>(), "len={}, output={:?}", output.len(), output);
+    }
+
+    fn check_remove_range2(m: &mut SplaySet<usize>, from: usize, to: usize, output: &mut Vec<usize>, mut expect_items: Vec<usize>) {
+        output.clear();
+        m.remove_range(&from, &to, output);
+        assert!(output.len() == expect_items.len(), "len={}, output={:?}", output.len(), output);
+        output.sort();
+        assert_eq!(output, &mut expect_items, "len={}, output={:?}", output.len(), output);
+    }
 }

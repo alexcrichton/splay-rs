@@ -36,6 +36,13 @@ impl<T: Ord> SplaySet<T> {
     /// Remove a value from the set. Return true if the value was
     /// present in the set.
     pub fn remove(&mut self, t: &T) -> bool { self.map.remove(t).is_some() }
+
+    /// Removes an open range of values from the set. All values that have been removed are pushed
+    /// to the end of `output`.
+    pub fn remove_range(&mut self, from: &T, to: &T, output: &mut Vec<T>) {
+        let _output: &mut Vec<(T,())> = unsafe { ::std::mem::transmute(output) };
+        self.map.remove_range(from, to, _output);
+    }
 }
 
 impl<T> Iterator for IntoIter<T> {
