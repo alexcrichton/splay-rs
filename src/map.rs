@@ -4,7 +4,7 @@ use std::cmp::Ordering::{Less, Equal, Greater};
 use std::default::Default;
 use std::iter::{FromIterator, IntoIterator};
 use std::mem;
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Range};
 
 use super::node::Node;
 
@@ -250,23 +250,23 @@ impl<K: Ord, V> SplayMap<K, V> {
         return Some(value);
     }
 
-    /// Removes an open range of keys from the map. All key-value pairs that have been removed are
+    /// Removes a half-open `range` of keys from the map. All key-value pairs that have been removed are
     /// pushed to the end of `output`
-    pub fn remove_range<Q: ?Sized>(&mut self, from: &Q, to: &Q, output: &mut Vec<(K,V)>)
+    pub fn remove_range<Q: ?Sized>(&mut self, range: Range<&Q>, output: &mut Vec<(K,V)>)
         where K: Borrow<Q>, Q: Ord
     {
         let (is_left, part): (bool, Option<Box<Node<K,V>>>) = match *self.root_mut() {
             None => { return; }
             Some(ref mut root) => {
-                splay(from, root);
-                if root.key.borrow() < from {
+                splay(range.start, root);
+                if root.key.borrow() < range.start {
                     let right = root.pop_right();
                     if right.is_some() {
                         (true, right)
                     } else {
                         return;
                     }
-                } else if to <= root.key.borrow() {
+                } else if range.end <= root.key.borrow() {
                     return;
                 } else {
                     let left = root.pop_left();
@@ -283,8 +283,8 @@ impl<K: Ord, V> SplayMap<K, V> {
 
         let (root, mid) = {|| {
             let (mid, right) = {
-                splay(to, &mut rest);
-                if rest.key.borrow() < to {
+                splay(range.end, &mut rest);
+                if rest.key.borrow() < range.end {
                     if let Some(r) = rest.pop_right() {
                         (rest, r)
                     } else {
@@ -300,7 +300,7 @@ impl<K: Ord, V> SplayMap<K, V> {
             if let Some(mut left) = left {
                 if left.right.is_some() {
                     // both left and right have both children
-                    splay(from, &mut left);
+                    splay(range.start, &mut left);
                     assert!(left.right.is_none());
                 }
                 left.right = Some(right);
