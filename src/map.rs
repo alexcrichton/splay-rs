@@ -4,7 +4,7 @@ use std::cmp::Ordering::{Less, Equal, Greater};
 use std::default::Default;
 use std::iter::{FromIterator, IntoIterator};
 use std::mem;
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Range};
 
 use super::node::Node;
 
@@ -248,6 +248,85 @@ impl<K: Ord, V> SplayMap<K, V> {
 
         self.size -= 1;
         return Some(value);
+    }
+
+    /// Removes a half-open `range` of keys from the map. All key-value pairs that have been removed are
+    /// pushed to the end of `output`
+    pub fn remove_range<Q: ?Sized>(&mut self, range: Range<&Q>, output: &mut Vec<(K,V)>)
+        where K: Borrow<Q>, Q: Ord
+    {
+        let (is_left, part): (bool, Option<Box<Node<K,V>>>) = match *self.root_mut() {
+            None => { return; }
+            Some(ref mut root) => {
+                splay(range.start, root);
+                if root.key.borrow() < range.start {
+                    let right = root.pop_right();
+                    if right.is_some() {
+                        (true, right)
+                    } else {
+                        return;
+                    }
+                } else if range.end <= root.key.borrow() {
+                    return;
+                } else {
+                    let left = root.pop_left();
+                    (false, left)
+                }
+            }
+        };
+
+        let (left, mut rest) = if is_left {
+            (self.root_mut().take(), part.unwrap())
+        } else {
+            (part, self.root_mut().take().unwrap())
+        };
+
+        let (root, mid) = {|| {
+            let (mid, right) = {
+                splay(range.end, &mut rest);
+                if rest.key.borrow() < range.end {
+                    if let Some(r) = rest.pop_right() {
+                        (rest, r)
+                    } else {
+                        return (left, Some(rest));
+                    }
+                } else {
+                    let mid = rest.pop_left();
+                    rest.left = left;
+                    return (Some(rest), mid);
+                }
+            };
+
+            if let Some(mut left) = left {
+                if left.right.is_some() {
+                    // both left and right have both children
+                    splay(range.start, &mut left);
+                    assert!(left.right.is_none());
+                }
+                left.right = Some(right);
+                (Some(left), Some(mid))
+            } else {
+                (Some(right), Some(mid))
+            }
+        }} ();
+
+        *self.root_mut() = root;
+        let len_before = output.len();
+        Self::push_all(mid, output);
+        self.size -= output.len() - len_before;
+    }
+
+    fn push_all(node: Option<Box<Node<K, V>>>, output: &mut Vec<(K,V)>) {
+        let (key, value, left, right) = if let Some(node) = node {
+            let Node { key, value, left, right, .. } = {*node};
+            (key, value, left, right)
+        } else {
+            return
+        };
+
+        Self::push_all(left, output);
+        Self::push_all(right, output);
+        output.push((key, value));
     }
 }
 
